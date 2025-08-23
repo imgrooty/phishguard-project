@@ -6,7 +6,7 @@ import Link from "next/link";
 const Hero: React.FC = () => {
   return (
     <section className="relative bg-gradient-to-br from-teal-50 via-white to-teal-100 overflow-hidden">
-      <div className="mx-auto max-w-screen-xl px-4 py-24 lg:flex lg:items-center lg:gap-12 lg:px-8">
+      <div className="mx-auto max-w-screen-xl px-4 py-14 lg:flex lg:items-center lg:gap-12 lg:px-8">
         
         {/* Left: Text Content */}
         <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
@@ -38,26 +38,7 @@ const Hero: React.FC = () => {
 
         {/* Right: Illustration / Graphic */}
         <div className="relative mt-12 lg:mt-0 lg:flex-1">
-          <svg
-            className="mx-auto w-full max-w-lg drop-shadow-lg"
-            viewBox="0 0 1024 768"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Modern shield icon */}
-            <path
-              d="M512 64C512 64 256 128 256 384C256 640 512 768 512 768C512 768 768 640 768 384C768 128 512 64 512 64Z"
-              fill="#14b8a6"
-              opacity="0.85"
-            />
-            <path
-              d="M512 200L650 340L470 520L370 420"
-              stroke="white"
-              strokeWidth="48"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <img src="heroimage.png" alt="image" />
         </div>
       </div>
     </section>
