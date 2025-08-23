@@ -7,7 +7,7 @@ export default function Home() {
   const [result, setResult] = useState<any>(null);
 
   const handleSubmit = async () => {
-    const res = await fetch("http://127.0.0.1:8000/predict", {
+    const res = await fetch("https://phishguard-project.onrender.com/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, age: Number(age) }),
