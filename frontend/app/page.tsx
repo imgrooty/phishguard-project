@@ -1,4 +1,8 @@
 "use client";
+import Header from "@/components/Header";
+import Hero from "@/components/Hero";
+import Motivation from "@/components/Motivation";
+import Team from "@/components/Team";
 import { useState } from "react";
 
 export default function Home() {
@@ -8,6 +12,7 @@ export default function Home() {
 
   const handleSubmit = async () => {
     const res = await fetch("https://phishguard-project.onrender.com/predict", {
+      // const res = await fetch("http://127.0.0.1:8000/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, age: Number(age) }),
@@ -17,8 +22,16 @@ export default function Home() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Next.js + FastAPI Demo 🚀</h1>
+    
+    <div>
+      <Header/>
+      <Hero/>
+      <Team/>
+      <Motivation/>
+
+
+      {/* demo api */}
+      <h2>DEMO API FETCH</h2>
       <input
         type="text"
         placeholder="Enter your name"
@@ -39,6 +52,7 @@ export default function Home() {
           <pre>{JSON.stringify(result, null, 2)}</pre>
         </div>
       )}
+      
     </div>
   );
 }
