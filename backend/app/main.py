@@ -1,16 +1,19 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Example schema
+class InputData(BaseModel):
+    name: str
+    age: int
 
-@app.get("/hello")
-def hello():
-    return { "Loading sooooon..."}
+@app.get("/")
+def home():
+    return {"message": "FastAPI is running!"}
+
+@app.post("/predict")
+def predict(data: InputData):
+    # Fake ML logic: classify as "young" or "old"
+    label = "young" if data.age < 30 else "old"
+    return {"name": data.name, "age": data.age, "category": label}
