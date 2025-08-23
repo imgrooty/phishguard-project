@@ -31,7 +31,7 @@ export default function Home() {
         value={age}
         onChange={(e) => setAge(e.target.value)}
       />
-      <button onClick={handleSubmit}>Send to FastAPI</button>
+      <button onClick={handleSubmit} style={{backgroundColor:"blue", color: "black", padding: "4px", borderRadius:"20px"}}>Send to FastAPI</button>
 
       {result && (
         <div style={{ marginTop: "20px" }}>
