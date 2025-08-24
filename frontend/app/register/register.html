@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Spam Detector | Register</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+    body { background: linear-gradient(135deg, #0a183d, #1a3980); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+    
+    /* Stars background - FIXED */
+    .bg-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+    .bg-stars li { 
+      position: absolute; 
+      list-style: none; 
+      width: 3px; 
+      height: 3px; 
+      background: rgba(255,255,255,0.7); 
+      border-radius: 50%; 
+      animation: twinkle 15s infinite; 
+    }
+    .bg-stars li:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .bg-stars li:nth-child(2) { left: 20%; animation-delay: 2s; animation-duration: 12s; }
+    .bg-stars li:nth-child(3) { left: 25%; animation-delay: 4s; }
+    .bg-stars li:nth-child(4) { left: 40%; animation-delay: 0s; animation-duration: 18s; }
+    .bg-stars li:nth-child(5) { left: 70%; }
+    .bg-stars li:nth-child(6) { left: 80%; animation-delay: 3s; }
+    .bg-stars li:nth-child(7) { left: 32%; animation-delay: 7s; }
+    .bg-stars li:nth-child(8) { left: 55%; animation-delay: 15s; animation-duration: 20s; }
+    .bg-stars li:nth-child(9) { left: 25%; animation-delay: 2s; animation-duration: 25s; }
+    .bg-stars li:nth-child(10) { left: 90%; animation-delay: 11s; }
+    @keyframes twinkle { 
+      0% { transform: translateY(0); opacity: 0.2; } 
+      50% { opacity: 1; } 
+      100% { transform: translateY(-1000px); opacity: 0; } 
+    }
+    
+    .register-container { position: relative; z-index: 2; width: 100%; max-width: 450px; padding: 0 20px; }
+    .register-box { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 15px; box-shadow: 0 0 20px rgba(24, 90, 219, 0.6); text-align: center; color: #1a56db; border: 1px solid rgba(66, 133, 244, 0.3); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .register-box:hover { transform: translateY(-5px); box-shadow: 0 0 25px rgba(24, 90, 219, 0.8); }
+    .logo { margin-bottom: 20px; }
+    .logo i { font-size: 50px; color: #1a56db; margin-bottom: 10px; }
+    .register-box h2 { margin-bottom: 15px; font-size: 28px; font-weight: 600; background: linear-gradient(90deg, #1a56db, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .register-box p { color: #4b5563; margin-bottom: 20px; font-size: 14px; }
+    
+    .input-box { margin: 15px 0; text-align: left; position: relative; }
+    .input-box label { display: block; margin-bottom: 8px; font-size: 14px; color: #1a56db; font-weight: 500; }
+    .input-box input { width: 100%; padding: 12px 45px 12px 15px; border: none; outline: none; border-radius: 8px; background: rgba(255, 255, 255, 0.9); color: #1f2937; font-size: 15px; border: 1px solid rgba(66, 133, 244, 0.3); transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .input-box input:focus { border-color: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+    .input-box i { position: absolute; right: 15px; bottom: 12px; color: #1a56db; cursor: pointer; }
+    .error-message { color: #ef4444; font-size: 12px; margin-top: 5px; display: none; }
+    
+    .terms { display: flex; align-items: center; margin: 15px 0 20px; font-size: 14px; color: #4b5563; }
+    .terms input { margin-right: 8px; accent-color: #1a56db; }
+    
+    .btn { margin-top: 10px; padding: 14px; width: 100%; border: none; border-radius: 8px; background: linear-gradient(90deg, #1a56db, #3b82f6); color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn:hover { background: linear-gradient(90deg, #3b82f6, #1a56db); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); }
+    .btn:active { transform: translateY(0); }
+    
+    .divider { margin: 20px 0; height: 1px; background: linear-gradient(to right, transparent, rgba(66, 133, 244, 0.5), transparent); }
+    
+    .social-register { margin: 15px 0; }
+    .social-register p { margin-bottom: 15px; color: #4b5563; }
+    .social-icons { display: flex; justify-content: center; gap: 15px; }
+    .social-icons a { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.9); color: #1a56db; font-size: 18px; text-decoration: none; transition: all 0.3s ease; border: 1px solid rgba(66, 133, 244, 0.3); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .social-icons a:hover { background: linear-gradient(90deg, #1a56db, #3b82f6); color: white; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3); }
+    
+    .login-link { margin-top: 20px; font-size: 14px; color: #4b5563; }
+    .login-link a { color: #1a56db; text-decoration: none; font-weight: 600; transition: color 0.3s ease; }
+    .login-link a:hover { color: #3b82f6; text-decoration: underline; }
+    
+    .toast { position: fixed; top: 20px; right: 20px; padding: 15px 20px; background: rgba(255, 255, 255, 0.95); color: #1a56db; border-radius: 8px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); display: flex; align-items: center; z-index: 1000; transform: translateX(150%); transition: transform 0.5s ease; border-left: 4px solid #1a56db; max-width: 350px; }
+    .toast.error { border-left-color: #ef4444; color: #ef4444; }
+    .toast.show { transform: translateX(0); }
+    .toast i { margin-right: 10px; font-size: 20px; }
+    
+    .spinner { width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    @media (max-width: 480px) {
+      .register-box { padding: 25px 20px; }
+      .toast { right: 10px; left: 10px; max-width: calc(100% - 20px); }
+    }
+    @media (max-width: 350px) {
+      .social-icons { flex-wrap: wrap; }
+      .register-box h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Stars background - FIXED -->
+  <ul class="bg-stars">
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+  </ul>
+
+  <div class="register-container">
+    <div class="register-box">
+      <div class="logo"><i class="fas fa-envelope"></i></div>
+      <h2>Create Your Account</h2>
+      <p>Join Email Spam Detector to secure your inbox</p>
+      
+      <form id="registerForm">
+        <div class="input-box">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" placeholder="Enter your full name" required autocomplete="name">
+          <i class="fas fa-user"></i>
+          <div class="error-message" id="nameError">Please enter your name</div>
+        </div>
+
+        <div class="input-box">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+          <i class="fas fa-envelope"></i>
+          <div class="error-message" id="emailError">Please enter a valid email address</div>
+        </div>
+
+        <div class="input-box">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Create a password" required autocomplete="new-password" minlength="8">
+          <i class="fas fa-eye" id="togglePassword"></i>
+          <div class="error-message" id="passwordError">Password must be at least 8 characters</div>
+        </div>
+
+        <div class="input-box">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password" minlength="8">
+          <i class="fas fa-eye" id="toggleConfirmPassword"></i>
+          <div class="error-message" id="confirmPasswordError">Passwords do not match</div>
+        </div>
+
+        <div class="terms">
+          <input type="checkbox" id="terms">
+          <label for="terms">I agree to the <a href="#" style="color: #1a56db;">Terms & Conditions</a></label>
+        </div>
+
+        <button type="submit" class="btn" id="registerButton">
+          <span id="buttonText">Create Account</span>
+        </button>
+      </form>
+
+      <div class="divider"></div>
+
+      <div class="social-register">
+        <p>Or register with</p>
+        <div class="social-icons">
+          <a href="#" id="googleRegister"><i class="fab fa-google"></i></a>
+          <a href="#" id="facebookRegister"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" id="githubRegister"><i class="fab fa-github"></i></a>
+        </div>
+      </div>
+
+      <div class="login-link">
+        Already have an account? <a href="#" id="loginLink">Sign In</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMessage">Registration successful!</span>
+  </div>
+
+  <script>
+    // DOM Elements
+    const registerForm = document.getElementById('registerForm');
+    const togglePassword = document.getElementById('togglePassword');
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const emailInput = document.getElementById('email');
+    const nameInput = document.getElementById('fullName');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const registerButton = document.getElementById('registerButton');
+    const buttonText = document.getElementById('buttonText');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const nameError = document.getElementById('nameError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
+    const loginLink = document.getElementById('loginLink');
+    const googleRegister = document.getElementById('googleRegister');
+    const facebookRegister = document.getElementById('facebookRegister');
+    const githubRegister = document.getElementById('githubRegister');
+
+    // Toggle password visibility
+    togglePassword.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      this.classList.toggle('fa-eye');
+      this.classList.toggle('fa-eye-slash');
+    });
+
+    // Toggle confirm password visibility
+    toggleConfirmPassword.addEventListener('click', function() {
+      const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      confirmPasswordInput.setAttribute('type', type);
+      this.classList.toggle('fa-eye');
+      this.classList.toggle('fa-eye-slash');
+    });
+
+    // Validate email format
+    function isValidEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    // Show error message
+    function showError(element, message) {
+      element.textContent = message;
+      element.style.display = 'block';
+      setTimeout(() => element.style.display = 'none', 3000);
+    }
+
+    // Show toast notification
+    function showToast(message, isSuccess = true) {
+      toastMessage.textContent = message;
+      toast.style.borderLeftColor = isSuccess ? '#1a56db' : '#ef4444';
+      toast.querySelector('i').className = isSuccess ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+      isSuccess ? toast.classList.remove('error') : toast.classList.add('error');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Set loading state
+    function setLoadingState(isLoading) {
+      registerButton.disabled = isLoading;
+      buttonText.innerHTML = isLoading ? '<div class="spinner"></div> Creating Account...' : 'Create Account';
+    }
+
+    // Form validation
+    function validateForm() {
+      let isValid = true;
+      
+      // Name validation
+      if (!nameInput.value.trim()) {
+        showError(nameError, 'Name is required');
+        isValid = false;
+      }
+      
+      // Email validation
+      if (!emailInput.value.trim()) {
+        showError(emailError, 'Email is required');
+        isValid = false;
+      } else if (!isValidEmail(emailInput.value.trim())) {
+        showError(emailError, 'Please enter a valid email address');
+        isValid = false;
+      }
+      
+      // Password validation
+      if (!passwordInput.value) {
+        showError(passwordError, 'Password is required');
+        isValid = false;
+      } else if (passwordInput.value.length < 8) {
+        showError(passwordError, 'Password must be at least 8 characters');
+        isValid = false;
+      }
+      
+      // Confirm password validation
+      if (passwordInput.value !== confirmPasswordInput.value) {
+        showError(confirmPasswordError, 'Passwords do not match');
+        isValid = false;
+      }
+      
+      // Terms validation
+      if (!document.getElementById('terms').checked) {
+        showToast('Please accept the Terms & Conditions', false);
+        isValid = false;
+      }
+      
+      return isValid;
+    }
+
+    // Form submission
+    registerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!validateForm()) return;
+      
+      setLoadingState(true);
+      
+      // Simulate API call
+      setTimeout(() => {
+        const name = nameInput.value;
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        
+        // Simulate successful registration for demo purposes
+        if (name && email && password) {
+          showToast('Registration successful! Welcome to Email Spam Detector.');
+          
+          // Simulate redirect after registration
+          setTimeout(() => {
+            setLoadingState(false);
+            // In a real scenario, you might redirect to login page
+            // window.location.href = 'login.html';
+          }, 2000);
+        } else {
+          showToast('Registration failed. Please try again.', false);
+          setLoadingState(false);
+        }
+      }, 1500);
+    });
+
+    // Login link handler
+    loginLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Redirecting to login page...');
+      // In a real scenario: window.location.href = 'login.html';
+    });
+
+    // Social register handlers
+    [googleRegister, facebookRegister, githubRegister].forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        showToast(`${btn.id.replace('Register', '')} registration would be implemented here`);
+      });
+    });
+
+    // Add subtle animation to input boxes when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputBoxes = document.querySelectorAll('.input-box');
+      inputBoxes.forEach((box, index) => {
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+          box.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          box.style.opacity = '1';
+          box.style.transform = 'translateY(0)';
+        }, 200 * (index + 1));
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Spam Detector | Login</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0a183d, #1a3980);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated stars background */
+    .bg-stars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .bg-stars li {
+      position: absolute;
+      list-style: none;
+      display: block;
+      width: 4px;
+      height: 4px;
+      background-color: rgba(246, 246, 250, 0.7);
+      bottom: -100px;
+      border-radius: 50%;
+      animation: twinkle 15s infinite;
+      transition-timing-function: linear;
+    }
+
+    .bg-stars li:nth-child(1) {
+      left: 10%;
+      animation-delay: 0s;
+      width: 2px;
+      height: 2px;
+    }
+
+    .bg-stars li:nth-child(2) {
+      left: 20%;
+      animation-delay: 2s;
+      animation-duration: 12s;
+      width: 3px;
+      height: 3px;
+    }
+
+    .bg-stars li:nth-child(3) {
+      left: 25%;
+      animation-delay: 4s;
+      width: 2px;
+      height: 2px;
+    }
+
+    .bg-stars li:nth-child(4) {
+      left: 40%;
+      animation-delay: 0s;
+      animation-duration: 18s;
+      width: 3px;
+      height: 3px;
+    }
+
+    .bg-stars li:nth-child(5) {
+      left: 70%;
+      width: 2px;
+      height: 2px;
+    }
+
+    .bg-stars li:nth-child(6) {
+      left: 80%;
+      animation-delay: 3s;
+      width: 3px;
+      height: 3px;
+    }
+
+    .bg-stars li:nth-child(7) {
+      left: 32%;
+      animation-delay: 7s;
+      width: 2px;
+      height: 2px;
+    }
+
+    .bg-stars li:nth-child(8) {
+      left: 55%;
+      animation-delay: 15s;
+      animation-duration: 20s;
+      width: 3px;
+      height: 3px;
+    }
+
+    .bg-stars li:nth-child(9) {
+      left: 25%;
+      animation-delay: 2s;
+      animation-duration: 25s;
+      width: 2px;
+      height: 2px;
+    }
+
+    .bg-stars li:nth-child(10) {
+      left: 90%;
+      animation-delay: 11s;
+      width: 3px;
+      height: 3px;
+    }
+
+    @keyframes twinkle {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.2;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-1000px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 20px;
+    }
+
+    .login-box {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(24, 90, 219, 0.6);
+      text-align: center;
+      color: #1a56db;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(66, 133, 244, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .login-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 25px rgba(24, 90, 219, 0.8);
+    }
+
+    .logo {
+      margin-bottom: 25px;
+    }
+
+    .logo i {
+      font-size: 50px;
+      color: #1a56db;
+      margin-bottom: 10px;
+    }
+
+    .login-box h2 {
+      margin-bottom: 20px;
+      font-size: 28px;
+      font-weight: 600;
+      background: linear-gradient(90deg, #1a56db, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .login-box p {
+      color: #4b5563;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .input-box {
+      margin: 20px 0;
+      text-align: left;
+      position: relative;
+    }
+
+    .input-box label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #1a56db;
+      font-weight: 500;
+    }
+
+    .input-box input {
+      width: 100%;
+      padding: 14px 45px 14px 15px;
+      border: none;
+      outline: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1f2937;
+      font-size: 15px;
+      border: 1px solid rgba(66, 133, 244, 0.3);
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-box input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    }
+
+    .input-box i {
+      position: absolute;
+      right: 15px;
+      bottom: 15px;
+      color: #1a56db;
+      cursor: pointer;
+    }
+
+    .error-message {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 15px 0 25px;
+      font-size: 14px;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      color: #4b5563;
+    }
+
+    .remember-me input {
+      margin-right: 8px;
+      accent-color: #1a56db;
+    }
+
+    .forgot-password a {
+      color: #1a56db;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .forgot-password a:hover {
+      color: #3b82f6;
+      text-decoration: underline;
+    }
+
+    .btn {
+      margin-top: 10px;
+      padding: 14px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #1a56db, #3b82f6);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn:hover {
+      background: linear-gradient(90deg, #3b82f6, #1a56db);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(45deg);
+      transition: all 0.6s ease;
+      opacity: 0;
+    }
+
+    .btn:hover::before {
+      opacity: 1;
+      animation: shine 1.5s forwards;
+    }
+
+    @keyframes shine {
+      0% {
+        left: -50%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+
+    .divider {
+      margin: 25px 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(66, 133, 244, 0.5), transparent);
+    }
+
+    .social-login {
+      margin: 20px 0;
+    }
+
+    .social-login p {
+      margin-bottom: 15px;
+      color: #4b5563;
+    }
+
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .social-icons a {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1a56db;
+      font-size: 18px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(66, 133, 244, 0.3);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .social-icons a:hover {
+      background: linear-gradient(90deg, #1a56db, #3b82f6);
+      color: white;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .signup-link {
+      margin-top: 25px;
+      font-size: 14px;
+      color: #4b5563;
+    }
+
+    .signup-link a {
+      color: #1a56db;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+
+    .signup-link a:hover {
+      color: #3b82f6;
+      text-decoration: underline;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #1a56db;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      z-index: 1000;
+      transform: translateX(150%);
+      transition: transform 0.5s ease;
+      border-left: 4px solid #1a56db;
+      max-width: 350px;
+    }
+
+    .toast.error {
+      border-left-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast i {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive design */
+    @media (max-width: 480px) {
+      .login-box {
+        padding: 30px 20px;
+      }
+      
+      .options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .forgot-password {
+        margin-top: 5px;
+      }
+      
+      .toast {
+        right: 10px;
+        left: 10px;
+        max-width: calc(100% - 20px);
+      }
+    }
+
+    @media (max-width: 350px) {
+      .social-icons {
+        flex-wrap: wrap;
+      }
+      
+      .login-box h2 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated stars background -->
+  <ul class="bg-stars">
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+    <li></li>
+  </ul>
+
+  <div class="login-container">
+    <div class="login-box">
+      <div class="logo">
+        <i class="fas fa-envelope"></i>
+      </div>
+      <h2>Welcome to Email Spam Detector</h2>
+      <p>Please sign in to your account</p>
+      
+      <form id="loginForm">
+        <div class="input-box">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+          <i class="fas fa-envelope"></i>
+          <div class="error-message" id="emailError">Please enter a valid email address</div>
+        </div>
+
+        <div class="input-box">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password" minlength="8">
+          <i class="fas fa-eye" id="togglePassword"></i>
+          <div class="error-message" id="passwordError">Password must be at least 8 characters</div>
+        </div>
+
+        <div class="options">
+          <div class="remember-me">
+            <input type="checkbox" id="remember">
+            <label for="remember">Remember me</label>
+          </div>
+          <div class="forgot-password">
+            <a href="#" id="forgotPassword">Forgot Password?</a>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="loginButton">
+          <span id="buttonText">Sign In</span>
+        </button>
+      </form>
+
+      <div class="divider"></div>
+
+      <div class="social-login">
+        <p>Or sign in with</p>
+        <div class="social-icons">
+          <a href="#" id="googleLogin"><i class="fab fa-google"></i></a>
+          <a href="#" id="facebookLogin"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" id="githubLogin"><i class="fab fa-github"></i></a>
+        </div>
+      </div>
+
+      <div class="signup-link">
+        Don't have an account? <a href="#" id="signUpLink">Sign Up</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMessage">Login successful!</span>
+  </div>
+
+  <script>
+    // DOM Elements
+    const loginForm = document.getElementById('loginForm');
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    const emailInput = document.getElementById('email');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const loginButton = document.getElementById('loginButton');
+    const buttonText = document.getElementById('buttonText');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const forgotPasswordLink = document.getElementById('forgotPassword');
+    const signUpLink = document.getElementById('signUpLink');
+    const googleLogin = document.getElementById('googleLogin');
+    const facebookLogin = document.getElementById('facebookLogin');
+    const githubLogin = document.getElementById('githubLogin');
+
+    // Toggle password visibility
+    togglePassword.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      this.classList.toggle('fa-eye');
+      this.classList.toggle('fa-eye-slash');
+    });
+
+    // Validate email format
+    function isValidEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    // Show error message
+    function showError(element, message) {
+      element.textContent = message;
+      element.style.display = 'block';
+      setTimeout(() => {
+        element.style.display = 'none';
+      }, 3000);
+    }
+
+    // Show toast notification
+    function showToast(message, isSuccess = true) {
+      toastMessage.textContent = message;
+      
+      if (isSuccess) {
+        toast.style.borderLeftColor = '#1a56db';
+        toast.querySelector('i').className = 'fas fa-check-circle';
+        toast.classList.remove('error');
+      } else {
+        toast.style.borderLeftColor = '#ef4444';
+        toast.querySelector('i').className = 'fas fa-exclamation-circle';
+        toast.classList.add('error');
+      }
+      
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Set loading state
+    function setLoadingState(isLoading) {
+      if (isLoading) {
+        loginButton.disabled = true;
+        buttonText.innerHTML = '<div class="spinner"></div> Signing In...';
+      } else {
+        loginButton.disabled = false;
+        buttonText.textContent = 'Sign In';
+      }
+    }
+
+    // Form validation
+    function validateForm() {
+      let isValid = true;
+      
+      // Email validation
+      if (!emailInput.value.trim()) {
+        showError(emailError, 'Email is required');
+        isValid = false;
+      } else if (!isValidEmail(emailInput.value.trim())) {
+        showError(emailError, 'Please enter a valid email address');
+        isValid = false;
+      }
+      
+      // Password validation
+      if (!passwordInput.value) {
+        showError(passwordError, 'Password is required');
+        isValid = false;
+      } else if (passwordInput.value.length < 8) {
+        showError(passwordError, 'Password must be at least 8 characters');
+        isValid = false;
+      }
+      
+      return isValid;
+    }
+
+    // Form submission
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      if (!validateForm()) return;
+      
+      setLoadingState(true);
+      
+      // Simulate API call
+      setTimeout(() => {
+        // This would be replaced with actual API call in production
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        
+        // Simulate successful login for demo purposes
+        // In a real application, you would verify credentials with your backend
+        if (email && password) {
+          showToast('Login successful! Redirecting to dashboard...');
+          
+          // Simulate redirect
+          setTimeout(() => {
+            setLoadingState(false);
+            // In a real scenario, you would redirect to another page
+            // window.location.href = 'dashboard.html';
+          }, 2000);
+        } else {
+          showToast('Invalid email or password', false);
+          setLoadingState(false);
+        }
+      }, 1500);
+    });
+
+    // Forgot password handler
+    forgotPasswordLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!emailInput.value.trim()) {
+        showToast('Please enter your email first', false);
+        emailInput.focus();
+        return;
+      }
+      
+      if (!isValidEmail(emailInput.value.trim())) {
+        showToast('Please enter a valid email address', false);
+        emailInput.focus();
+        return;
+      }
+      
+      showToast('Password reset instructions sent to your email');
+    });
+
+    // Sign up link handler
+    signUpLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Redirecting to registration page...');
+      // In a real scenario: window.location.href = 'register.html';
+    });
+
+    // Social login handlers
+    googleLogin.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Google login would be implemented here');
+    });
+
+    facebookLogin.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Facebook login would be implemented here');
+    });
+
+    githubLogin.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('GitHub login would be implemented here');
+    });
+
+    // Add subtle animation to input boxes when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputBoxes = document.querySelectorAll('.input-box');
+      inputBoxes.forEach((box, index) => {
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+          box.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          box.style.opacity = '1';
+          box.style.transform = 'translateY(0)';
+        }, 200 * (index + 1));
+      });
+      
+      // Check if there are saved credentials
+      const rememberedEmail = localStorage.getItem('rememberedEmail');
+      if (rememberedEmail) {
+        emailInput.value = rememberedEmail;
+        document.getElementById('remember').checked = true;
+      }
+    });
+
+    // Remember me functionality
+    document.getElementById('remember').addEventListener('change', function() {
+      if (this.checked && isValidEmail(emailInput.value)) {
+        localStorage.setItem('rememberedEmail', emailInput.value);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+    });
+  </script>
+</body>
+</html>
