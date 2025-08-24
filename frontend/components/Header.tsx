@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-white shadow-md">
+    <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="mx-auto flex h-16 max-w-screen-xl items-center gap-8 px-4 sm:px-6 lg:px-8">
         {/* Logo / Brand */}
         <Link className="flex items-center text-teal-600 font-bold text-lg" href="/">
