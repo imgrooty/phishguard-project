@@ -1,177 +1,158 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { Inbox, UserCircle } from "lucide-react";
 
-const DashboardPage: React.FC = () => {
-  const [emailContent, setEmailContent] = useState("");
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+// ------------------ TYPES ------------------
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  provider?: string;
+}
 
-  const analyzeEmail = async () => {
-    setIsAnalyzing(true);
-    try {
-      // Simulate API call for email analysis
-      setTimeout(() => {
-        const isPhishing = Math.random() > 0.5;
-        setAnalysisResult({
-          isPhishing,
-          confidence: (Math.random() * 100).toFixed(2),
-          threats: isPhishing ? [
-            "Suspicious sender domain",
-            "Urgent action language detected",
-            "Contains suspicious links"
-          ] : ["No significant threats detected"],
-          recommendations: isPhishing ? [
-            "Do not click any links",
-            "Verify sender identity",
-            "Report to your IT department"
-          ] : ["Email appears safe to interact with"]
-        });
-        setIsAnalyzing(false);
-      }, 2000);
-    } catch (error) {
-      console.error("Analysis error:", error);
-      setIsAnalyzing(false);
-    }
-  };
+interface Email {
+  id: string;
+  from: string;
+  subject?: string;
+  snippet: string;
+  date: string;
+}
 
-  const clearAnalysis = () => {
-    setEmailContent("");
-    setAnalysisResult(null);
-  };
+// ------------------ EMAILS COMPONENT ------------------
+const EmailsPage: React.FC<{ userId: string }> = ({ userId }) => {
+  const [emails, setEmails] = useState<Email[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEmails = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/emails/${userId}`);
+        const data = await res.json();
+        if (Array.isArray(data)) setEmails(data);
+        else setEmails([]);
+      } catch (err) {
+        console.error("Error fetching emails:", err);
+        setEmails([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmails();
+    const interval = setInterval(fetchEmails, 30000); // refresh every 30s
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  if (loading) return <p className="text-gray-600">Loading emails...</p>;
+  if (emails.length === 0)
+    return (
+      <div className="p-6 bg-white rounded-xl shadow-lg mt-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Inbox</h3>
+        <p className="text-gray-500">No emails found.</p>
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-gray-100">
-
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Phishing Email Detection</h1>
-          <p className="text-gray-600">Analyze suspicious emails for phishing attempts</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Input Section */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Analyze Email</h2>
-            <textarea
-              value={emailContent}
-              onChange={(e) => setEmailContent(e.target.value)}
-              placeholder="Paste the suspicious email content here..."
-              className="w-full h-64 border border-gray-300 rounded-md p-4 resize-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              disabled={isAnalyzing}
-            />
-            <div className="flex gap-4 mt-4">
-              <button
-                onClick={analyzeEmail}
-                disabled={!emailContent.trim() || isAnalyzing}
-                className="flex-1 bg-teal-600 text-white py-3 rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                {isAnalyzing ? "Analyzing..." : "Analyze Email"}
-              </button>
-              <button
-                onClick={clearAnalysis}
-                className="px-6 bg-gray-200 text-gray-700 py-3 rounded-md hover:bg-gray-300 transition-colors"
-              >
-                Clear
-              </button>
-            </div>
+    <div className="p-6 bg-white rounded-xl shadow-lg mt-6">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">Inbox</h3>
+      <div className="space-y-3">
+        {emails.map((email) => (
+          <div
+            key={email.id}
+            className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition"
+          >
+            <h4 className="font-medium text-gray-900">{email.subject || "(No subject)"}</h4>
+            <p className="text-sm text-gray-600">{email.snippet}</p>
+            <p className="text-xs text-gray-400 mt-1">From: {email.from}</p>
+            <p className="text-xs text-gray-400">
+              Date: {new Date(email.date).toLocaleString()}
+            </p>
           </div>
-
-          {/* Results Section */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Analysis Results</h2>
-            
-            {isAnalyzing ? (
-              <div className="flex items-center justify-center h-48">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
-              </div>
-            ) : analysisResult ? (
-              <div className="space-y-4">
-                {/* Result Card */}
-                <div className={`p-4 rounded-lg ${
-                  analysisResult.isPhishing 
-                    ? "bg-red-100 border-l-4 border-red-500" 
-                    : "bg-green-100 border-l-4 border-green-500"
-                }`}>
-                  <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      analysisResult.isPhishing ? "bg-red-500" : "bg-green-500"
-                    }`}>
-                      {analysisResult.isPhishing ? (
-                        <span className="text-white text-lg">⚠️</span>
-                      ) : (
-                        <span className="text-white text-lg">✓</span>
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <h3 className={`font-semibold ${
-                        analysisResult.isPhishing ? "text-red-800" : "text-green-800"
-                      }`}>
-                        {analysisResult.isPhishing ? "Phishing Detected" : "Safe Email"}
-                      </h3>
-                      <p className={`text-sm ${
-                        analysisResult.isPhishing ? "text-red-600" : "text-green-600"
-                      }`}>
-                        Confidence: {analysisResult.confidence}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Threats */}
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Detected Threats:</h4>
-                  <ul className="space-y-1">
-                    {analysisResult.threats.map((threat: string, index: number) => (
-                      <li key={index} className="flex items-center text-sm text-gray-600">
-                        <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
-                        {threat}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Recommendations */}
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Recommendations:</h4>
-                  <ul className="space-y-1">
-                    {analysisResult.recommendations.map((rec: string, index: number) => (
-                      <li key={index} className="flex items-center text-sm text-gray-600">
-                        <span className="w-2 h-2 bg-teal-400 rounded-full mr-2"></span>
-                        {rec}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-gray-500">
-                <p>Enter email content to begin analysis</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-3xl font-bold text-teal-600 mb-2">98%</div>
-            <div className="text-gray-600">Accuracy Rate</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-3xl font-bold text-teal-600 mb-2">1.2M+</div>
-            <div className="text-gray-600">Emails Analyzed</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-3xl font-bold text-teal-600 mb-2">99.9%</div>
-            <div className="text-gray-600">Uptime</div>
-          </div>
-        </div>
-      </main>
+        ))}
+      </div>
     </div>
   );
 };
 
-export default DashboardPage;
+// ------------------ PROFILE COMPONENT ------------------
+const ProfilePage: React.FC<{ user: User }> = ({ user }) => {
+  return (
+    <div className="flex flex-col items-center justify-center p-6 mt-6 bg-white rounded-xl shadow-lg w-full">
+      <div className="space-y-4 w-full max-w-md">
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Name</h3>
+          <p className="text-xl font-semibold text-gray-800">{user.name}</p>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Email</h3>
+          <p className="text-xl font-semibold text-gray-800">{user.email}</p>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">User ID</h3>
+          <p className="text-sm font-mono text-gray-700">{user.id}</p>
+        </div>
+        {user.provider && (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Provider</h3>
+            <p className="text-sm text-gray-700">{user.provider}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ------------------ DASHBOARD COMPONENT ------------------
+const Dashboard: React.FC<{ user: User }> = ({ user }) => {
+  const [dashboardPage, setDashboardPage] = useState<"profile" | "emails">("profile");
+
+  return (
+    <div className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
+      <div className="w-full max-w-3xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 bg-white rounded-xl shadow-lg mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">User Dashboard</h2>
+          <button
+            onClick={() => {
+              window.history.pushState({}, document.title, "/");
+              window.location.reload();
+            }}
+            className="text-sm text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex items-center justify-center space-x-4 p-2 bg-white rounded-lg shadow mb-4">
+          <button
+            onClick={() => setDashboardPage("profile")}
+            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+              dashboardPage === "profile"
+                ? "bg-indigo-100 text-indigo-700 font-semibold"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <UserCircle className="w-5 h-5 mr-2" /> Profile
+          </button>
+          <button
+            onClick={() => setDashboardPage("emails")}
+            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+              dashboardPage === "emails"
+                ? "bg-indigo-100 text-indigo-700 font-semibold"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <Inbox className="w-5 h-5 mr-2" /> Emails
+          </button>
+        </nav>
+
+        {/* Main Content */}
+        {dashboardPage === "profile" ? <ProfilePage user={user} /> : <EmailsPage userId={user.id} />}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

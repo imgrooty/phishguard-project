@@ -1,3 +1,7 @@
 uvicorn
 fastapi
 pydantic
+python-dotenv 
+httpx
+prisma
+prisma-client-py

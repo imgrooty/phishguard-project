@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  provider      String
+  email         String    @unique
+  name          String?
+  access_token  String
+  refresh_token String?
+  external_id   String    @unique
+  emails        EmailScan[]
+}
+
+model EmailScan {
+  id       Int     @id @default(autoincrement())
+  user     User    @relation(fields: [user_id], references: [id])
+  user_id  Int
+  subject  String
+  sender   String
+  body     String
+  label    String
+  score    Float
+}
