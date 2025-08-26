@@ -4,4 +4,7 @@ pydantic
 python-dotenv 
 httpx
 prisma
-prisma-client-py
+pytest-cov
+requests
+psycopg2-binary
+
