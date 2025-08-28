@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient"
 
 const DashboardPage: React.FC = () => {
   const [emailContent, setEmailContent] = useState("");
@@ -41,6 +41,49 @@ const DashboardPage: React.FC = () => {
     setAnalysisResult(null);
   };
 
+
+
+  //backend
+  //
+  //
+  //
+   useEffect(() => {
+    const sendEmail = async () => {
+      // Get current Supabase session
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.log("No session, user not logged in")
+        return
+      }
+
+      const accessToken = session.access_token
+
+      // Call your FastAPI backend
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/emails`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          user_id: session.user.id,
+          subject: "Hello",
+          body: "This is a test email",
+        }),
+      })
+
+      const data = await res.json()
+      console.log("Response from backend:", data)
+    }
+
+    sendEmail()
+  }, [])
+
+//
+//
+//
+//
   return (
     <div className="min-h-screen bg-gray-100">
 
