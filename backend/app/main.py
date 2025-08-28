@@ -1,90 +1,99 @@
 # backend/app/main.py
-import os
-from fastapi import FastAPI, Depends, HTTPException
+from typing import List, Optional
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from dotenv import load_dotenv
-from .db import get_pool
+from pydantic import BaseModel, EmailStr
 from .auth import verify_token
+from .db import get_pool, close_pool
 
-# load .env file
-load_dotenv()
-
-app = FastAPI()
+app = FastAPI(title="PhishGuard API", version="1.0.0")
 
 # CORS
-allowed = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+import os
+origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in allowed],
+    allow_origins=origins or ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Schemas
+@app.on_event("shutdown")
+async def _shutdown():
+    await close_pool()
+
 class EmailIn(BaseModel):
+    from_email: EmailStr
+    subject: str
+    body: str
+    raw: Optional[str] = None
+
+class EmailOut(EmailIn):
+    id: int
     user_id: str
-    from_email: str | None = None
-    subject: str | None = None
-    body: str | None = None
-    raw: dict | None = None
 
 class ScanIn(BaseModel):
     email_id: int
-    model_version: str | None = "v1"
+    verdict: str
     score: float
-    label: str
-    details: dict | None = None
+    details: Optional[str] = None
+
+class ScanOut(ScanIn):
+    id: int
 
 @app.get("/health")
-def health():
-    return {"ok": True}
+async def health():
+    return {"status": "ok"}
 
-@app.post("/emails")
-async def create_email(item: EmailIn, claims = Depends(verify_token)):
-    # enforce: user can only insert their own row
-    if item.user_id != claims.get("sub"):
-        raise HTTPException(status_code=403, detail="Cannot insert for another user")
-
+@app.post("/emails", response_model=EmailOut)
+async def create_email(
+    item: EmailIn,
+    claims: dict = Depends(verify_token),
+):
+    user_id = claims.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No subject in token")
     pool = await get_pool()
-    async with pool.acquire() as con:
-        row = await con.fetchrow(
-            """
-            insert into public.emails (user_id, from_email, subject, body, raw)
-            values ($1,$2,$3,$4,$5)
-            returning id
-            """,
-            item.user_id, item.from_email, item.subject, item.body, item.raw
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "insert into public.emails (user_id, from_email, subject, body, raw) values ($1,$2,$3,$4,$5) returning id, user_id, from_email, subject, body, raw",
+            user_id, item.from_email, item.subject, item.body, item.raw,
         )
-        return {"id": row["id"]}
+    return dict(row)
 
-@app.get("/emails")
-async def list_my_emails(claims = Depends(verify_token)):
-    uid = claims.get("sub")
+@app.get("/emails", response_model=List[EmailOut])
+async def list_emails(claims: dict = Depends(verify_token)):
+    user_id = claims.get("sub")
     pool = await get_pool()
-    async with pool.acquire() as con:
-        rows = await con.fetch(
-            """
-            select id, from_email, subject, created_at
-            from public.emails
-            where user_id=$1
-            order by created_at desc
-            """, uid
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "select id, user_id, from_email, subject, body, raw from public.emails where user_id=$1 order by id desc",
+            user_id,
         )
-        return [dict(r) for r in rows]
+    return [dict(r) for r in rows]
 
-@app.post("/scans")
-async def add_scan(item: ScanIn):
-    # Use service_role key when calling this (bypasses RLS)
+@app.post("/scans", response_model=ScanOut)
+async def create_scan(item: ScanIn, claims: dict = Depends(verify_token)):
     pool = await get_pool()
-    async with pool.acquire() as con:
-        row = await con.fetchrow(
-            """
-            insert into public.scans (email_id, model_version, score, label, details)
-            values ($1,$2,$3,$4,$5)
-            returning id
-            """,
-            item.email_id, item.model_version, item.score, item.label, item.details
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "insert into public.scans (email_id, verdict, score, details) values ($1,$2,$3,$4) returning id, email_id, verdict, score, details",
+            item.email_id, item.verdict, item.score, item.details,
         )
-        return {"id": row["id"]}
+    return dict(row)
+
+@app.get("/scans", response_model=List[ScanOut])
+async def list_scans(email_id: Optional[int] = None, claims: dict = Depends(verify_token)):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        if email_id:
+            rows = await conn.fetch(
+                "select id, email_id, verdict, score, details from public.scans where email_id=$1 order by id desc",
+                email_id,
+            )
+        else:
+            rows = await conn.fetch(
+                "select id, email_id, verdict, score, details from public.scans order by id desc"
+            )
+    return [dict(r) for r in rows]

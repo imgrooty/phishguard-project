@@ -1,54 +1,54 @@
 # backend/app/auth.py
-import os, httpx, time
-from typing import Dict, Any
-from jose import jwt
+import os
+import time
+from typing import Dict, Any, Optional
+
+import httpx
+from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-# cache JWKS for performance
-JWKS_CACHE: Dict[str, Any] = {}
-security = HTTPBearer(auto_error=False)
+JWKS_CACHE: Dict[str, Any] = {"updated_at": 0, "keys": None}
+JWKS_TTL_SECONDS = 60 * 60  # 1 hour
+security = HTTPBearer(auto_error=True)
 
-def get_env(name: str) -> str:
+def _env(name: str) -> str:
     v = os.getenv(name)
     if not v:
         raise RuntimeError(f"Missing env var: {name}")
     return v
 
-async def get_jwks() -> Dict[str, Any]:
-    url = get_env("SUPABASE_JWKS_URL")
-    now = time.time()
-    if (c := JWKS_CACHE.get("data")) and (now - JWKS_CACHE.get("ts", 0) < 3600):
-        return c
+async def _get_jwks() -> Dict[str, Any]:
+    now = int(time.time())
+    if JWKS_CACHE["keys"] and now - JWKS_CACHE["updated_at"] < JWKS_TTL_SECONDS:
+        return JWKS_CACHE["keys"]
+    url = _env("SUPABASE_JWKS_URL")
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.get(url)
         r.raise_for_status()
-        data = r.json()
-        JWKS_CACHE["data"] = data
-        JWKS_CACHE["ts"] = now
-        return data
+        JWKS_CACHE["keys"] = r.json()
+        JWKS_CACHE["updated_at"] = now
+        return JWKS_CACHE["keys"]
 
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
-    token = credentials.credentials
-    jwks = await get_jwks()
+async def verify_token(
+    creds: HTTPAuthorizationCredentials = Depends(security),
+) -> Dict[str, Any]:
+    # Validate Supabase JWT via JWKS and return claims dict.
+    token = creds.credentials
     try:
-        header = jwt.get_unverified_header(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token header")
-
-    key = None
-    for k in jwks["keys"]:
-        if k["kid"] == header.get("kid"):
-            key = k
-            break
-    if not key:
-        raise HTTPException(status_code=401, detail="Signing key not found")
-
-    audience = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
-    try:
-        claims = jwt.decode(token, key, algorithms=[key["alg"]], audience=audience)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return claims
+        unverified = jwt.get_unverified_header(token)
+        kid = unverified.get("kid")
+        jwks = await _get_jwks()
+        key: Optional[Dict[str, Any]] = next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
+        if not key:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token key")
+        claims = jwt.decode(
+            token,
+            key,
+            algorithms=[unverified.get("alg", "RS256")],
+            audience=_env("SUPABASE_JWT_AUDIENCE"),
+            options={"verify_exp": True},
+        )
+        return claims
+    except JWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e)) from e
