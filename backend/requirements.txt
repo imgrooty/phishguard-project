@@ -7,4 +7,8 @@ prisma==0.15.0
 pytest-cov
 requests
 psycopg2-binary
+psycopg2-binary 
+asyncpg
+prisma client
+alembic
 

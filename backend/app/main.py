@@ -20,7 +20,7 @@ app = FastAPI(on_startup=[connect_db], on_shutdown=[disconnect_db])
 # ---------- CORS ----------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://phishguard-project.vercel.app/"],  # your frontend URL
+    allow_origins=["http://localhost:3000", "https://phishguard-project.vercel.app"],  # your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
