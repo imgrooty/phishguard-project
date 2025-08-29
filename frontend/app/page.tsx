@@ -1,9 +1,9 @@
 "use client";
-import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Motivation from "@/components/Motivation";
 import Team from "@/components/Team";
 import { useState } from "react";
+import { apiClient } from "@/lib/api";
 
 export default function Home() {
   const [name, setName] = useState("");
@@ -11,14 +11,18 @@ export default function Home() {
   const [result, setResult] = useState<any>(null);
 
   const handleSubmit = async () => {
-    // const res = await fetch("https://phishguard-project.onrender.com/predict", {
-    const res = await fetch("http://127.0.0.1:8000/predict", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, age: Number(age) }),
-    });
-    const data = await res.json();
-    setResult(data);
+    try {
+      const response = await fetch(`${process.env.NODE_ENV === 'production' ? 'https://phishguard-api.onrender.com' : 'http://localhost:8000'}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, age: Number(age) }),
+      });
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error('API Error:', error);
+      setResult({ error: 'Failed to connect to API' });
+    }
   };
 
   return (

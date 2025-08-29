@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
+import { apiClient } from "@/lib/api";
 
 const DashboardPage: React.FC = () => {
   const [emailContent, setEmailContent] = useState("");
@@ -11,21 +11,7 @@ const DashboardPage: React.FC = () => {
   const analyzeEmail = async () => {
     setIsAnalyzing(true);
     try {
-      const response = await fetch("https://your-render-app.onrender.com/analyze/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email_content: emailContent
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Analysis failed");
-      }
-      
-      const data = await response.json();
+      const data = await apiClient.analyzeEmail(emailContent);
       setAnalysisResult({
         isPhishing: data.is_phishing,
         confidence: data.confidence_score.toFixed(2),
@@ -40,6 +26,8 @@ const DashboardPage: React.FC = () => {
         threats: ["Error occurred during analysis"],
         recommendations: ["Please try again later"]
       });
+    } finally {
+      setIsAnalyzing(false);
       setIsAnalyzing(false);
     }
   };
