@@ -11,27 +11,35 @@ const DashboardPage: React.FC = () => {
   const analyzeEmail = async () => {
     setIsAnalyzing(true);
     try {
-      // Simulate API call for email analysis
-      setTimeout(() => {
-        const isPhishing = Math.random() > 0.5;
-        setAnalysisResult({
-          isPhishing,
-          confidence: (Math.random() * 100).toFixed(2),
-          threats: isPhishing ? [
-            "Suspicious sender domain",
-            "Urgent action language detected",
-            "Contains suspicious links"
-          ] : ["No significant threats detected"],
-          recommendations: isPhishing ? [
-            "Do not click any links",
-            "Verify sender identity",
-            "Report to your IT department"
-          ] : ["Email appears safe to interact with"]
-        });
-        setIsAnalyzing(false);
-      }, 2000);
+      const response = await fetch("https://your-render-app.onrender.com/analyze/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email_content: emailContent
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Analysis failed");
+      }
+      
+      const data = await response.json();
+      setAnalysisResult({
+        isPhishing: data.is_phishing,
+        confidence: data.confidence_score.toFixed(2),
+        threats: data.threats_detected,
+        recommendations: data.recommendations
+      });
     } catch (error) {
       console.error("Analysis error:", error);
+      setAnalysisResult({
+        isPhishing: false,
+        confidence: "0",
+        threats: ["Error occurred during analysis"],
+        recommendations: ["Please try again later"]
+      });
       setIsAnalyzing(false);
     }
   };
