@@ -1,6 +1,7 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Mail, Shield, AlertTriangle, CheckCircle, Clock, Eye, Filter, Search } from "lucide-react";
 
 interface Email {

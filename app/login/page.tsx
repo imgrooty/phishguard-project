@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Mail, Eye, EyeOff, Lock, Shield, Zap, ArrowRight, Chrome } from "lucide-react";
+import Link from "next/link";
+import "@/app/globals.css";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();

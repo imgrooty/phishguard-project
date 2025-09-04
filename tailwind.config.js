@@ -1,71 +1,96 @@
+import animate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        border: "hsl(var(--border))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        cyber: {
-          blue: '#00f5ff',
-          purple: '#8b5cf6',
-          green: '#00ff88',
-          red: '#ff0040',
-        }
-      },
-      animation: {
-        'fade-in': 'fadeIn 1s ease-out forwards',
-        'fade-in-up': 'fadeInUp 1s ease-out forwards',
-        'slide-in-left': 'slideInLeft 0.8s ease-out forwards',
-        'slide-in-right': 'slideInRight 0.8s ease-out forwards',
-        'float': 'float 6s ease-in-out infinite',
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite alternate',
-        'scan': 'scan 3s linear infinite',
-        'matrix-rain': 'matrix-rain 20s linear infinite',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        slideInLeft: {
-          '0%': { opacity: '0', transform: 'translateX(-50px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
-        slideInRight: {
-          '0%': { opacity: '0', transform: 'translateX(50px)' },
-          '100%': { opacity: '1', transform: 'translateX(0)' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-20px)' },
-        },
-        'pulse-glow': {
-          '0%': { boxShadow: '0 0 5px rgba(6, 182, 212, 0.5)' },
-          '100%': { boxShadow: '0 0 20px rgba(6, 182, 212, 0.8), 0 0 30px rgba(6, 182, 212, 0.4)' },
-        },
-        scan: {
-          '0%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(100vw)' },
-        },
-        'matrix-rain': {
-          '0%': { transform: 'translateY(-100vh)' },
-          '100%': { transform: 'translateY(100vh)' },
-        },
-      },
-      fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-      },
-    },
-  },
-  plugins: [],
+export default {
+	darkMode: "class",
+	content: [
+		"./pages/**/*.{ts,tsx}",
+		"./components/**/*.{ts,tsx}",
+		"./app/**/*.{ts,tsx}",
+		"./src/**/*.{ts,tsx}",
+	],
+	prefix: "",
+	theme: {
+		container: {
+			center: true,
+			padding: '2rem',
+			screens: {
+				'2xl': '1400px'
+			}
+		},
+		extend: {
+			colors: {
+				border: 'hsl(var(--border))',
+				input: 'hsl(var(--input))',
+				ring: 'hsl(var(--ring))',
+				background: 'hsl(var(--background))',
+				foreground: 'hsl(var(--foreground))',
+				primary: {
+					DEFAULT: 'hsl(var(--primary))',
+					foreground: 'hsl(var(--primary-foreground))'
+				},
+				secondary: {
+					DEFAULT: 'hsl(var(--secondary))',
+					foreground: 'hsl(var(--secondary-foreground))'
+				},
+				destructive: {
+					DEFAULT: 'hsl(var(--destructive))',
+					foreground: 'hsl(var(--destructive-foreground))'
+				},
+				muted: {
+					DEFAULT: 'hsl(var(--muted))',
+					foreground: 'hsl(var(--muted-foreground))'
+				},
+				accent: {
+					DEFAULT: 'hsl(var(--accent))',
+					foreground: 'hsl(var(--accent-foreground))'
+				},
+				popover: {
+					DEFAULT: 'hsl(var(--popover))',
+					foreground: 'hsl(var(--popover-foreground))'
+				},
+				card: {
+					DEFAULT: 'hsl(var(--card))',
+					foreground: 'hsl(var(--card-foreground))'
+				},
+				cyber: {
+					cyan: 'hsl(var(--cyber-cyan))',
+					purple: 'hsl(var(--cyber-purple))',
+					green: 'hsl(var(--cyber-green))',
+					red: 'hsl(var(--cyber-red))',
+					yellow: 'hsl(var(--cyber-yellow))'
+				}
+			},
+			borderRadius: {
+				lg: 'var(--radius)',
+				md: 'calc(var(--radius) - 2px)',
+				sm: 'calc(var(--radius) - 4px)'
+			},
+			keyframes: {
+				'accordion-down': {
+					from: {
+						height: '0'
+					},
+					to: {
+						height: 'var(--radix-accordion-content-height)'
+					}
+				},
+				'accordion-up': {
+					from: {
+						height: 'var(--radix-accordion-content-height)'
+					},
+					to: {
+						height: '0'
+					}
+				}
+			},
+			animation: {
+				'accordion-down': 'accordion-down 0.2s ease-out',
+				'accordion-up': 'accordion-up 0.2s ease-out'
+			}
+		}
+	},
+	plugins: [animate],
 };
+
+
