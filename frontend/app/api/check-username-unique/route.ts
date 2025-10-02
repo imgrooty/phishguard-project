@@ -7,7 +7,7 @@ const UsernameQuerySchema = z.object({
   searchParams: z.object({
     username: usernameValidation,
   }),
-
+})
 export async function GET(request: Request) {
   await dbConnect();
 
@@ -35,4 +35,4 @@ export async function GET(request: Request) {
       return Response.json({ unique: false, error: "Invalid username format" }, { status: 400 });
 
     }
-});
+};
