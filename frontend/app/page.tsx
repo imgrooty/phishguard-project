@@ -1,6 +1,7 @@
 "use client";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import HomeSection from "@/components/Home";
 import Motivation from "@/components/Motivation";
 import Team from "@/components/Team";
 import { useState } from "react";
@@ -27,6 +28,7 @@ export default function Home() {
       <Hero/>
       <Team/>
       <Motivation/>
+      <HomeSection/>
 
 
       {/* demo api */}
