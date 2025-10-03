@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // For loading state
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
@@ -18,7 +18,6 @@ export default function RegisterPage() {
     setError('');
     setIsLoading(true);
 
-    // Basic validation
     if (!name || !email || !password) {
       setError('All fields are required.');
       setIsLoading(false);
@@ -26,26 +25,33 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch('/api/auth/register', { // Corrected API endpoint
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await res.json();
+      // Defensive check: if response is not JSON, catch it early
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Server did not return valid JSON. Check API route.');
+      }
 
-      // Check for non-successful HTTP status codes
       if (!res.ok) {
-        // Use the 'message' field from our corrected API
         throw new Error(data.message || 'Something went wrong');
       }
 
-      // Save token and redirect on success
+      if (!data.token) {
+        throw new Error('No token received from server');
+      }
+
       localStorage.setItem('token', data.token);
       router.push('/dashboard');
 
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
