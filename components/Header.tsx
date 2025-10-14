@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { FaUserPlus, FaInfoCircle, FaTachometerAlt, FaBlog } from "react-icons/fa";
 
 const Header: React.FC = () => {
   const { data: session, status } = useSession();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -77,6 +79,7 @@ const Header: React.FC = () => {
 
             {/* Mobile Menu Button */}
             <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="block rounded-sm bg-gray-100 p-2.5 text-gray-600 transition hover:text-gray-600/75 md:hidden"
             >
               <span className="sr-only">Toggle menu</span>
@@ -93,6 +96,67 @@ const Header: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+         <nav
+      className={`md:hidden fixed top-0 left-0 w-full h-screen bg-white z-50 transition-transform duration-300 ease-in-out ${
+        isMenuOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div className="flex items-center justify-between px-6 py-4 border-b shadow-sm">
+        <h2 className="text-xl font-bold text-teal-600">Menu</h2>
+        <button
+          onClick={() => setIsMenuOpen(false)}
+          className="text-gray-500 hover:text-teal-600 text-2xl"
+        >
+          ✕
+        </button>
+      </div>
+
+      <ul className="flex flex-col gap-6 px-6 py-6 text-lg font-medium text-gray-700">
+        <li>
+          <Link
+            href="/about"
+            className="flex items-center gap-3 hover:text-teal-600 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <FaInfoCircle /> About
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3 hover:text-teal-600 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <FaTachometerAlt /> Dashboard
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/blog"
+            className="flex items-center gap-3 hover:text-teal-600 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <FaBlog /> Blog
+          </Link>
+        </li>
+        {!session && (
+          <li>
+            <Link
+              href="/register"
+              className="flex items-center gap-3 hover:text-teal-600 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <FaUserPlus /> Register
+            </Link>
+          </li>
+        )}
+      </ul>
+    </nav>
+
+        )}
       </div>
     </header>
   );
