@@ -7,52 +7,41 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function LoginPage() {
-  const { data: session } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: FormEvent) => {
+ // Handle credentials login
+  const handleCredentialsLogin = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setIsLoading(true);
 
-    if (!email || !password) {
-      setError("Both email and password are required.");
-      setIsLoading(false);
-      return;
-    }
+    const res = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+    });
 
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to login");
-
-      localStorage.setItem("token", data.token);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session) {
+    if (res?.error) {
+      setError(res.error);
+    } else {
       router.push('/dashboard');
     }
-  }, [session, router]);
+    setIsLoading(false);
+  };
 
-  if (session) {
-    return null; // nothing displayed
-  }
+  // Handle social logins
+  const handleSocialLogin = async (provider: 'google' | 'azure-ad') => {
+    try {
+      await signIn(provider, { callbackUrl: '/dashboard' });
+    } catch (err) {
+      console.error(err);
+      setError(`Failed to login with ${provider}`);
+    }
+  };
 
   return (
     <main className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -80,7 +69,7 @@ export default function LoginPage() {
         {/* OAuth Buttons */}
         <div className="flex flex-col gap-3 mb-6">
           <button
-            onClick={() => signIn("google")}
+            onClick={() => handleSocialLogin('google')}
             className="flex items-center justify-center gap-3 px-6 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 shadow-sm transition"
           >
             <Image
@@ -93,7 +82,7 @@ export default function LoginPage() {
           </button>
 
           <button
-            onClick={() => signIn("azure-ad")}
+            onClick={() => handleSocialLogin('azure-ad')}
             className="flex items-center justify-center gap-3 px-6 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 shadow-sm transition"
           >
             <Image
@@ -113,7 +102,7 @@ export default function LoginPage() {
         </div>
 
         {/* Email / Password Login */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleCredentialsLogin} className="space-y-4">
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-sm">
               {error}
