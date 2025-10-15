@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
-import { handler as nextAuthHandler } from "./auth/[...nextauth]/route"; // import your NextAuth handler
+import { handler as nextAuthHandler } from "../auth/[...nextauth]/route";
+
+// Define a TypeScript type for your session.user
+type SessionUser = {
+  id: string;
+  email: string;
+  name: string;
+};
 
 export async function POST(req: Request) {
   try {
     // 1️⃣ Get session from NextAuth handler
-    const session = await getServerSession(nextAuthHandler);
+    const session = (await getServerSession(nextAuthHandler)) as {
+      user?: SessionUser;
+    } | null;
 
     if (!session?.user?.email) {
       return NextResponse.json(

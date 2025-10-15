@@ -30,7 +30,7 @@ export const handler = NextAuth({
         if (!user) throw new Error('No user found');
         const valid = await bcrypt.compare(credentials!.password, user.password);
         if (!valid) throw new Error('Invalid password');
-        return { id: user._id.toString(), email: user.email };
+        return { id: user._id.toString(), email: user.email, name:user.name};
       },
     }),
   ],
