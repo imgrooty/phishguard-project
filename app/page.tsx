@@ -5,7 +5,6 @@ import DownloadExtension from "@/components/DownloadExtension";
 import DemoForm from "@/components/DemoForm";
 import Motivation from "@/components/Motivation";
 import Team from "@/components/Team";
-import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
