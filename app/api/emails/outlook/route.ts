@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 interface SessionUser {
   id: string;
