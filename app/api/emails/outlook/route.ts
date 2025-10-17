@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
+import https from 'https';
 import axios from 'axios';
 
 interface SessionUser {
@@ -102,7 +103,7 @@ async function fetchOutlookEmails(accessToken: string): Promise<EmailData[]> {
           Authorization: `Bearer ${accessToken}`,
         },
         timeout: 30000, // 30 second timeout
-        httpsAgent: new (require('https').Agent)({
+        httpsAgent: new https.Agent({
           keepAlive: true,
           timeout: 30000,
         }),
