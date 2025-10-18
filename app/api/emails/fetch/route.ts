@@ -41,6 +41,10 @@ export async function GET(req: NextRequest) {
     const provider = (session as any).provider || session.user.provider;
     console.log(session);
 
+    // ✅ Get the 'since' parameter to fetch only new emails
+    const { searchParams } = new URL(req.url);
+    const sinceParam = searchParams.get('since');
+    
     let fetchEndpoint = '';
     if (provider === 'google') {
       fetchEndpoint = '/api/emails/gmail';
@@ -54,21 +58,41 @@ export async function GET(req: NextRequest) {
         provider: session.user.provider,
       });
     }
-    
+
+    // ✅ Add since parameter to fetch endpoint if provided
+    const fetchUrl = sinceParam 
+      ? `${fetchEndpoint}?since=${encodeURIComponent(sinceParam)}`
+      : fetchEndpoint;
 
     const baseUrl = process.env.NEXTAUTH_URL || '';
-    fetch(`${baseUrl}${fetchEndpoint}`, {
+    fetch(`${baseUrl}${fetchUrl}`, {
       headers: { Cookie: req.headers.get('cookie') || '' },
     }).catch((err) => console.error('Background email fetch error:', err));
+
+    // ✅ Filter emails based on 'since' parameter if provided
+    let emailsToReturn = user.emails || [];
+    
+    if (sinceParam) {
+      const sinceDate = new Date(sinceParam);
+      emailsToReturn = emailsToReturn.filter(
+        (email: { date: string | Date }) => new Date(email.date) > sinceDate
+      );
+      console.log(`Returning ${emailsToReturn.length} new emails since ${sinceDate}`);
+    }
+
+    // ✅ Sort emails by date (newest first)
+    const sortedEmails = emailsToReturn.sort(
+      (a: { date: string | Date }, b: { date: string | Date }) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     return NextResponse.json({
       success: true,
       provider: session.user.provider,
-      lastSync: user.lastEmailSync,
-      emails: user.emails.sort(
-        (a: { date: string }, b: { date: string }) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-      ),
+      lastSync: new Date().toISOString(), // ✅ Always return current timestamp
+      emails: sortedEmails,
+      isIncremental: !!sinceParam, // ✅ Flag to indicate if this is incremental fetch
+      totalEmailsInDb: user.emails?.length || 0, // ✅ Helpful for debugging
     });
   } catch (error) {
     console.error('Error in fetch emails endpoint:', error);

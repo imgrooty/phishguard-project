@@ -2,6 +2,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEmails } from "@/components/EmailContext";
 
 interface Email {
   messageId: string;
@@ -19,22 +20,74 @@ interface Email {
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [emails, setEmails] = useState<Email[]>([]);
+  const { emails, setEmails, lastSync, setLastSync, addNewEmails } = useEmails();
   const [loading, setLoading] = useState(false);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
 
-  // Fetch emails function
-  const fetchEmails = async () => {
+  // Sanitize HTML content to prevent XSS attacks and style pollution
+  const sanitizeHTML = (html: string): string => {
+    if (!html) return '';
+    
+    let sanitized = html;
+    
+    // Remove style tags and their content (IMPORTANT: prevents CSS pollution)
+    sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+    
+    // Remove script tags and their content
+    sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    
+    // Remove event handlers (onclick, onerror, onload, etc.)
+    sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+    sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+    
+    // Remove javascript: protocol from href and src
+    sanitized = sanitized.replace(/javascript:/gi, '');
+    
+    // Remove iframe tags
+    sanitized = sanitized.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+    
+    // Remove object and embed tags
+    sanitized = sanitized.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+    sanitized = sanitized.replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '');
+    
+    // Remove form tags (to prevent form hijacking)
+    sanitized = sanitized.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '');
+    
+    // Remove meta tags that could redirect
+    sanitized = sanitized.replace(/<meta[^>]*>/gi, '');
+    
+    // Remove link tags to prevent external stylesheet injection
+    sanitized = sanitized.replace(/<link[^>]*>/gi, '');
+    
+    // Remove base tags that could hijack relative URLs
+    sanitized = sanitized.replace(/<base[^>]*>/gi, '');
+    
+    return sanitized;
+  };
+
+  // Fetch emails function - now only fetches new emails
+  const fetchEmails = async (isInitialLoad = false) => {
     if (status !== "authenticated") return;
     
     try {
       setLoading(true);
-      const response = await fetch("/api/emails/fetch");
+      
+      // Pass lastSync to API to only fetch new emails
+      const url = lastSync && !isInitialLoad
+        ? `/api/emails/fetch?since=${lastSync.toISOString()}`
+        : '/api/emails/fetch';
+      
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.success) {
-        setEmails(data.emails);
+        if (isInitialLoad || !lastSync) {
+          // First load: set all emails
+          setEmails(data.emails);
+        } else {
+          // Subsequent loads: add only new emails
+          addNewEmails(data.emails);
+        }
         setLastSync(new Date(data.lastSync));
       }
     } catch (error) {
@@ -49,11 +102,13 @@ export default function Dashboard() {
       // Save user info to your database only when logged in
       fetch("/api/save-user", { method: "POST" });
       
-      // Fetch emails
-      fetchEmails();
+      // Only fetch if we don't have emails cached
+      if (emails.length === 0) {
+        fetchEmails(true);
+      }
       
       // Set up interval to refresh emails every 5 minutes
-      const intervalId = setInterval(fetchEmails, 5 * 60 * 1000);
+      const intervalId = setInterval(() => fetchEmails(false), 5 * 60 * 1000);
       
       return () => clearInterval(intervalId);
     } else if (status === "unauthenticated") {
@@ -80,11 +135,11 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold">Welcome, {session.user?.name} 👋</h1>
           <div className="flex items-center gap-4">
             <button 
-              onClick={fetchEmails}
+              onClick={() => fetchEmails(false)}
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
             >
-              {loading ? "Refreshing..." : "Refresh Emails"}
+              {loading ? "Checking for new emails..." : "Check New Emails"}
             </button>
             {lastSync && (
               <p className="text-sm text-gray-500">
@@ -97,7 +152,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Email List */}
           <div className="md:col-span-1 bg-white rounded-lg shadow-md p-4 h-[calc(100vh-200px)] overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-4">Your Emails</h2>
+            <h2 className="text-xl font-semibold mb-4">Your Emails ({emails.length})</h2>
             
             {emails.length === 0 ? (
               <p className="text-gray-500 text-center py-4">
@@ -177,9 +232,12 @@ export default function Dashboard() {
                 
                 <div className="email-body">
                   {selectedEmail.body ? (
-                    <div className="prose max-w-none">
-                      {selectedEmail.body}
-                    </div>
+                    <div 
+                      className="prose max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: sanitizeHTML(selectedEmail.body) 
+                      }}
+                    />
                   ) : (
                     <p className="text-gray-500 italic">No content</p>
                   )}

@@ -1,305 +1,174 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/route';
-import dbConnect from '@/lib/dbConnect';
-import User from '@/models/User';
-import https from 'https';
-import axios from 'axios';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
+import dbConnect from "@/lib/dbConnect";
+import User from "@/models/User";
 
-interface SessionUser {
-  id: string;
-  email: string;
-  name: string;
-  provider?: string;
-}
+const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
-interface EmailData {
-  messageId: string;
-  subject: string;
-  from: string;
-  to: string;
-  date: Date;
-  body: string;
-  isRead: boolean;
-  isPotentialPhishing: boolean;
-  phishingScore: number;
-  phishingReasons: string[];
-}
-
-interface OutlookMessage {
-  id: string;
-  subject: string;
-  bodyPreview: string;
-  body: { content: string };
-  from: { emailAddress: { address: string; name: string } };
-  toRecipients: Array<{ emailAddress: { address: string; name: string } }>;
-  receivedDateTime: string;
-  isRead: boolean;
-}
-
-// Helper function to retry failed requests
-async function retryRequest<T>(
-  fn: () => Promise<T>,
-  retries = 3,
-  delay = 1000
-): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      const isLastRetry = i === retries - 1;
-      const isRetryableError =
-        axios.isAxiosError(error) &&
-        (error.code === 'ECONNRESET' ||
-          error.code === 'ETIMEDOUT' ||
-          error.code === 'ECONNREFUSED');
-
-      if (isLastRetry || !isRetryableError) {
-        throw error;
-      }
-
-      console.log(`⚠️ Retry ${i + 1}/${retries} after ${delay}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, delay * (i + 1)));
-    }
-  }
-  throw new Error('Max retries reached');
-}
-
-// Function to refresh Azure AD token
-async function refreshAzureToken(refreshToken: string): Promise<{
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-} | null> {
+async function refreshAccessToken(refresh_token: string) {
   try {
-    const response = await axios.post(
-      `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID || 'common'}/oauth2/v2.0/token`,
-      new URLSearchParams({
+    const response = await fetch(MICROSOFT_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
         client_id: process.env.AZURE_AD_CLIENT_ID!,
         client_secret: process.env.AZURE_AD_CLIENT_SECRET!,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-        scope: 'openid profile email offline_access https://graph.microsoft.com/Mail.Read',
+        refresh_token,
+        grant_type: "refresh_token",
+        scope: "openid profile email offline_access Mail.Read",
       }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      }
-    );
+    });
 
-    return response.data;
+    const data = await response.json();
+    return {
+      access_token: data.access_token,
+      expires_in: data.expires_in,
+    };
   } catch (error) {
-    console.error('❌ Failed to refresh Azure token:', error);
+    console.error("❌ Error refreshing Outlook access token:", error);
     return null;
   }
 }
 
-// Function to fetch emails from Microsoft Graph API (Outlook)
-async function fetchOutlookEmails(accessToken: string): Promise<EmailData[]> {
-  const fetchFn = async () => {
-    const response = await axios.get(
-      'https://graph.microsoft.com/v1.0/me/messages?$top=20&$select=id,subject,bodyPreview,from,toRecipients,receivedDateTime,isRead,body',
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        timeout: 30000, // 30 second timeout
-        httpsAgent: new https.Agent({
-          keepAlive: true,
-          timeout: 30000,
-        }),
-      }
-    );
-    return response;
-  };
+async function analyzePhishing(email: any) {
+  const reasons: string[] = [];
+  let score = 0;
 
-  try {
-    const response = await retryRequest(fetchFn, 3, 1000);
-    const messages = response.data.value || [];
-    const emails: EmailData[] = [];
-
-    for (const message of messages) {
-      const fromAddress = message.from?.emailAddress?.address || 'unknown@unknown.com';
-      const toAddress = message.toRecipients?.[0]?.emailAddress?.address || 'unknown@unknown.com';
-
-      if (!message.from?.emailAddress?.address) {
-        console.warn(`⚠️ Email ${message.id} has no from address, using fallback`);
-      }
-
-      const content = (message.subject || '') + ' ' + (message.bodyPreview || '');
-      const suspiciousWords = ['password', 'verify', 'account', 'login', 'urgent', 'security'];
-      const foundWords = suspiciousWords.filter((word) =>
-        content.toLowerCase().includes(word)
-      );
-
-      emails.push({
-        messageId: message.id,
-        subject: message.subject || '(No Subject)',
-        from: fromAddress,
-        to: toAddress,
-        date: new Date(message.receivedDateTime),
-        body: message.body?.content || message.bodyPreview || '',
-        isRead: message.isRead || false,
-        isPotentialPhishing: foundWords.length > 1,
-        phishingScore: foundWords.length,
-        phishingReasons: foundWords,
-      });
-    }
-
-    console.log(`✅ Fetched ${emails.length} emails from Outlook`);
-    return emails;
-  } catch (error) {
-    console.error('❌ Error fetching Outlook emails:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Response data:', error.response?.data);
-      console.error('Response status:', error.response?.status);
-      
-      if (error.response?.status === 401) {
-        throw new Error('UNAUTHORIZED');
-      }
-    }
-    throw error;
+  // Check for suspicious sender
+  if (email.from.includes("noreply") || email.from.includes("no-reply")) {
+    reasons.push("Sender uses 'noreply' address");
+    score++;
   }
+
+  // Check for urgency keywords
+  const urgentKeywords = ["urgent", "immediate", "action required", "verify", "suspend", "expire"];
+  if (urgentKeywords.some((keyword) => email.subject.toLowerCase().includes(keyword))) {
+    reasons.push("Subject contains urgency keywords");
+    score++;
+  }
+
+  // Check for suspicious links
+  if (email.body.includes("http://") || email.body.includes("https://")) {
+    const linkCount = (email.body.match(/https?:\/\//g) || []).length;
+    if (linkCount > 5) {
+      reasons.push("Contains many external links");
+      score++;
+    }
+  }
+
+  return {
+    isPotentialPhishing: score >= 2,
+    phishingScore: score,
+    phishingReasons: reasons,
+  };
 }
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  let accessToken = (session as any).access_token;
+  const refreshToken = (session as any).refresh_token;
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !(session as any).user) {
-      return NextResponse.json(
-        { error: 'Unauthorized: No valid session found' },
-        { status: 401 }
-      );
-    }
-
-    const sessionUser = (session as any).user as SessionUser;
-    let accessToken = (session as any).access_token;
-    const refreshToken = (session as any).refresh_token;
-    const provider = sessionUser.provider || (session as any).provider;
-
-    console.log('📋 Session info:', {
-      email: sessionUser.email,
-      provider,
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-    });
-
-    if (!sessionUser.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized: No email in session' },
-        { status: 401 }
-      );
-    }
-
-    if (provider !== 'azure-ad') {
-      return NextResponse.json(
-        { error: 'This endpoint is only for Outlook users' },
-        { status: 400 }
-      );
-    }
-
     await dbConnect();
 
-    // Find user in database
-    const user = await User.findOne({ email: sessionUser.email.toLowerCase() });
+    // Get 'since' parameter for incremental fetch
+    const { searchParams } = new URL(req.url);
+    const sinceParam = searchParams.get("since");
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    // Build Outlook filter
+    let filter = "";
+    if (sinceParam) {
+      const sinceDate = new Date(sinceParam).toISOString();
+      filter = `&$filter=receivedDateTime gt ${sinceDate}`;
     }
 
-    // Try to fetch with current token, refresh if it fails
-    let emails: EmailData[];
-    try {
-      if (!accessToken) {
-        throw new Error('UNAUTHORIZED');
+    // Fetch emails from Outlook
+    let response = await fetch(
+      `https://graph.microsoft.com/v1.0/me/messages?$top=50${filter}&$orderby=receivedDateTime DESC`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
       }
-      emails = await fetchOutlookEmails(accessToken);
-    } catch (error: any) {
-      // If unauthorized and we have a refresh token, try to refresh
-      if (error.message === 'UNAUTHORIZED' && refreshToken) {
-        console.log('🔄 Attempting to refresh token...');
-        const newTokens = await refreshAzureToken(refreshToken);
+    );
 
-        if (newTokens) {
-          console.log('✅ Token refreshed successfully');
-          accessToken = newTokens.access_token;
-
-          // Update user's tokens in database for future use
-          user.accessToken = newTokens.access_token;
-          user.refreshToken = newTokens.refresh_token;
-          user.tokenExpiry = new Date(Date.now() + newTokens.expires_in * 1000);
-          await user.save();
-
-          // Retry with new token
-          emails = await fetchOutlookEmails(accessToken);
-        } else {
-          return NextResponse.json(
-            { error: 'Failed to refresh token. Please sign in again.' },
-            { status: 401 }
-          );
-        }
-      } else {
-        throw error;
+    // Refresh token if expired
+    if (response.status === 401 && refreshToken) {
+      const refreshed = await refreshAccessToken(refreshToken);
+      if (refreshed) {
+        accessToken = refreshed.access_token;
+        response = await fetch(
+          `https://graph.microsoft.com/v1.0/me/messages?$top=50${filter}&$orderby=receivedDateTime DESC`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
       }
     }
 
-    console.log(`📧 Processing ${emails.length} emails`);
-
-    if (!user.emails) {
-      user.emails = [];
+    if (!response.ok) {
+      throw new Error(`Outlook API error: ${response.status}`);
     }
 
-    // Store emails in the database
-    for (const email of emails) {
-      if (!email.from || !email.messageId) {
-        console.warn(`⚠️ Skipping invalid email:`, email.subject);
-        continue;
-      }
+    const data = await response.json();
+    const messages = data.value || [];
 
-      const existingEmailIndex = user.emails.findIndex(
-        (e: any) => e.messageId === email.messageId
+    // Parse and format emails
+    const formattedEmails = await Promise.all(
+      messages.map(async (email: any) => {
+        const emailData = {
+          messageId: email.id,
+          subject: email.subject || "(No subject)",
+          from: email.from?.emailAddress?.address || "Unknown",
+          to: email.toRecipients?.[0]?.emailAddress?.address || session.user?.email,
+          date: new Date(email.receivedDateTime),
+          body: email.body?.content || "",
+          isRead: email.isRead,
+        };
+
+        const phishingAnalysis = await analyzePhishing(emailData);
+
+        return {
+          ...emailData,
+          ...phishingAnalysis,
+        };
+      })
+    );
+
+    // Update user's emails in database
+    const user = await User.findOne({ email: session.user.email });
+    if (user) {
+      // Get existing message IDs
+      const existingIds = new Set(user.emails.map((e: any) => e.messageId));
+
+      // Filter out duplicates
+      const newEmails = formattedEmails.filter(
+        (email) => !existingIds.has(email.messageId)
       );
 
-      if (existingEmailIndex === -1) {
-        user.emails.push(email);
+      if (newEmails.length > 0) {
+        user.emails.push(...newEmails);
+        user.lastEmailSync = new Date();
+        await user.save();
+        console.log(`✅ Added ${newEmails.length} new Outlook emails for ${session.user.email}`);
       } else {
-        user.emails[existingEmailIndex] = {
-          ...user.emails[existingEmailIndex].toObject(),
-          ...email,
-        };
+        console.log(`ℹ️ No new emails to add for ${session.user.email}`);
       }
     }
-
-    user.lastEmailSync = new Date();
-    await user.save();
-
-    console.log(`✅ Saved ${user.emails.length} emails for user ${user.email}`);
 
     return NextResponse.json({
       success: true,
-      emailCount: user.emails.length,
-      emails: user.emails.sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-      ),
+      count: formattedEmails.length,
+      newEmailsAdded: formattedEmails.length,
     });
   } catch (error) {
-    console.error('❌ Error in Outlook emails endpoint:', error);
-
-    let errorMessage = 'Failed to fetch emails';
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNRESET') {
-        errorMessage = 'Network connection error. Please try again.';
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-      }
-    }
-
+    console.error("❌ Outlook fetch error:", error);
     return NextResponse.json(
-      {
-        error: errorMessage,
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: "Failed to fetch Outlook emails" },
       { status: 500 }
     );
   }

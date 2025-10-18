@@ -4,12 +4,8 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { SessionProviderComponent } from "@/components/SessionProvider";
-import { initBackgroundServices } from "@/lib/backgroundService";
+import { EmailProvider } from "@/components/EmailContext";
 
-// Initialize background services (only runs on server)
-if (typeof window === 'undefined') {
-  initBackgroundServices();
-}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,11 +35,12 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      ><EmailProvider>
         <SessionProviderComponent>
           <Header />
           {children}
         </SessionProviderComponent>
+        </EmailProvider>
         <Footer />
       </body>
     </html>
