@@ -4,12 +4,6 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { SessionProviderComponent } from "@/components/SessionProvider";
-import { initBackgroundServices } from "@/lib/backgroundService";
-
-// Initialize background services (only runs on server)
-if (typeof window === 'undefined') {
-  initBackgroundServices();
-}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
