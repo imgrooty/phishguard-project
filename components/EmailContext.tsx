@@ -1,6 +1,15 @@
 "use client";
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 
+interface UrlSafetyResult {
+  url: string;
+  isSafe: boolean;
+  threatType?: string;
+  platformType?: string;
+  cacheDuration?: string;
+  lastChecked: Date;
+}
+
 interface Email {
   messageId: string;
   subject: string;
@@ -12,6 +21,18 @@ interface Email {
   isPotentialPhishing: boolean;
   phishingScore: number;
   phishingReasons: string[];
+  
+  // Enhanced analysis fields
+  prediction?: string;
+  confidence?: number;
+  model_used?: string;
+  virusTotalResult?: {
+    malicious: number;
+    total: number;
+  };
+  googleSafeBrowsingResult?: UrlSafetyResult[];
+  heuristicScore?: number;
+  mlScore?: number;
 }
 
 interface EmailContextType {

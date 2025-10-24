@@ -1,63 +1,93 @@
-// models/User.ts
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-import mongoose from 'mongoose';
+export interface IUrlSafetyResult {
+  url: string;
+  isSafe: boolean;
+  threatType?: string;
+  platformType?: string;
+  cacheDuration?: string;
+  lastChecked: Date;
+}
 
-// Email schema for storing fetched emails
-const EmailSchema = new mongoose.Schema({
-  messageId: { type: String, required: true },
-  subject: { type: String, default: '(No Subject)' },
-  from: { type: String, required: true, default: 'unknown@unknown.com' },
-  to: { type: String, default: 'unknown@unknown.com' },
-  date: { type: Date, required: true },
-  body: { type: String, default: '' },
-  isRead: { type: Boolean, default: false },
-  isPotentialPhishing: { type: Boolean, default: false },
-  phishingScore: { type: Number, default: 0 },
-  phishingReasons: [{ type: String }],
-}, { timestamps: true });
+export interface IEmail {
+  messageId: string;
+  subject: string;
+  from: string;
+  to: string;
+  date: Date;
+  body: string;
+  isRead: boolean;
+  isPotentialPhishing: boolean;
+  phishingScore: number;
+  phishingReasons: string[];
+  // Enhanced analysis fields
+  prediction?: string;
+  confidence?: number;
+  model_used?: string;
+  virusTotalResult?: any;
+  googleSafeBrowsingResult?: IUrlSafetyResult[];
+  heuristicScore?: number;
+  mlScore?: number;
+}
 
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please provide a name.'],
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password?: string;
+  provider: string;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiry?: Date;
+  emails: IEmail[];
+  lastEmailSync?: Date;
+}
+
+const UrlSafetyResultSchema = new Schema<IUrlSafetyResult>({
+  url: { type: String, required: true },
+  isSafe: { type: Boolean, required: true },
+  threatType: { type: String },
+  platformType: { type: String },
+  cacheDuration: { type: String },
+  lastChecked: { type: Date, required: true }
+});
+
+const EmailSchema = new Schema<IEmail>(
+  {
+    messageId: { type: String, required: true },
+    subject: { type: String, default: "(No Subject)" },
+    from: { type: String, required: true, default: "unknown@unknown.com" },
+    to: { type: String, default: "unknown@unknown.com" },
+    date: { type: Date, required: true },
+    body: { type: String, default: "" },
+    isRead: { type: Boolean, default: false },
+    isPotentialPhishing: { type: Boolean, default: false },
+    phishingScore: { type: Number, default: 0 },
+    phishingReasons: [{ type: String }],
+    // Enhanced analysis fields
+    prediction: { type: String },
+    confidence: { type: Number },
+    model_used: { type: String },
+    virusTotalResult: { type: Schema.Types.Mixed },
+    googleSafeBrowsingResult: [UrlSafetyResultSchema],
+    heuristicScore: { type: Number },
+    mlScore: { type: Number },
   },
-  email: {
-    type: String,
-    required: [true, 'Please provide an email.'],
-    unique: true, // This creates an index automatically
-    lowercase: true, // Normalize email to lowercase
-    trim: true, // Remove whitespace
-    match: [/.+\@.+\..+/, 'Please fill a valid email address'],
+  { timestamps: true }
+);
+
+const UserSchema = new Schema<IUser>(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String },
+    provider: { type: String, enum: ["credentials", "google", "azure-ad", "oauth"], default: "credentials" },
+    accessToken: { type: String },
+    refreshToken: { type: String },
+    tokenExpiry: { type: Date },
+    emails: [EmailSchema],
+    lastEmailSync: { type: Date },
   },
-  password: {
-    type: String,
-    required: function(this: any) {
-      return this.provider === 'credentials';
-    },
-  },
-  provider: {
-    type: String,
-    enum: ['credentials', 'google', 'azure-ad', 'oauth'], // Added 'oauth' for backward compatibility
-    default: 'credentials'
-  },
-  // These token fields are not typically stored in DB with NextAuth
-  // NextAuth stores them in the JWT token instead
-  // Consider removing these or using them only for manual token management
-  accessToken: { type: String },
-  refreshToken: { type: String },
-  tokenExpiry: { type: Date },
-  
-  emails: [EmailSchema],
-  lastEmailSync: { type: Date },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-// Add index for faster email lookups
-UserSchema.index({ email: 1 });
-
-// Add index for messageId in emails array for faster duplicate checks
-UserSchema.index({ 'emails.messageId': 1 });
-
-// Prevent duplicate emails based on messageId
-EmailSchema.index({ messageId: 1 });
-
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+export default (mongoose.models.User as Model<IUser>) || mongoose.model<IUser>("User", UserSchema);

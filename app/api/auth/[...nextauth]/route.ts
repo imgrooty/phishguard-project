@@ -5,7 +5,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
-import image from "next/image";
 
 const authOptions = {
   providers: [
@@ -42,10 +41,11 @@ const authOptions = {
       async authorize(credentials) {
         await dbConnect();
         const user = await User.findOne({ email: credentials?.email });
-        if (!user) throw new Error("No user found");
-        const valid = await bcrypt.compare(credentials!.password, user.password);
+        if (!user || !user.password) throw new Error("No user found");
+        if (!credentials?.password) throw new Error("No password provided");
+        const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) throw new Error("Invalid password");
-        return { id: user._id.toString(), email: user.email, name: user.name };
+        return { id: (user._id as any).toString(), email: user.email, name: user.name };
       },
     }),
   ],

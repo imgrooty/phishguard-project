@@ -2,67 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
+import User, { IUser, IEmail } from "@/models/User";
+import { EmailService } from "@/lib/emailService";
 
-const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-
-async function refreshAccessToken(refresh_token: string) {
-  try {
-    const response = await fetch(MICROSOFT_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: process.env.AZURE_AD_CLIENT_ID!,
-        client_secret: process.env.AZURE_AD_CLIENT_SECRET!,
-        refresh_token,
-        grant_type: "refresh_token",
-        scope: "openid profile email offline_access Mail.Read",
-      }),
-    });
-
-    const data = await response.json();
-    return {
-      access_token: data.access_token,
-      expires_in: data.expires_in,
-    };
-  } catch (error) {
-    console.error("❌ Error refreshing Outlook access token:", error);
-    return null;
-  }
+interface OutlookEmail {
+  id: string;
+  subject: string;
+  from?: { emailAddress?: { address?: string } };
+  toRecipients?: { emailAddress?: { address?: string } }[];
+  receivedDateTime: string;
+  body?: { content?: string };
+  isRead: boolean;
 }
 
-async function analyzePhishing(email: any) {
-  const reasons: string[] = [];
-  let score = 0;
-
-  // Check for suspicious sender
-  if (email.from.includes("noreply") || email.from.includes("no-reply")) {
-    reasons.push("Sender uses 'noreply' address");
-    score++;
-  }
-
-  // Check for urgency keywords
-  const urgentKeywords = ["urgent", "immediate", "action required", "verify", "suspend", "expire"];
-  if (urgentKeywords.some((keyword) => email.subject.toLowerCase().includes(keyword))) {
-    reasons.push("Subject contains urgency keywords");
-    score++;
-  }
-
-  // Check for suspicious links
-  if (email.body.includes("http://") || email.body.includes("https://")) {
-    const linkCount = (email.body.match(/https?:\/\//g) || []).length;
-    if (linkCount > 5) {
-      reasons.push("Contains many external links");
-      score++;
-    }
-  }
-
-  return {
-    isPotentialPhishing: score >= 2,
-    phishingScore: score,
-    phishingReasons: reasons,
-  };
+function extractLinks(text: string): string[] {
+  const linkRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi;
+  return text.match(linkRegex) || [];
 }
+
+/* =========================
+   🔹 Enhanced Outlook Processing
+   ========================= */
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -71,105 +31,113 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  let accessToken = (session as any).access_token;
-  const refreshToken = (session as any).refresh_token;
+  await dbConnect();
+  const emailService = EmailService.getInstance();
+  
+  let accessToken = (session as any).access_token as string | undefined;
+  const refreshToken = (session as any).refresh_token as string | undefined;
 
   try {
-    await dbConnect();
-
-    // Get 'since' parameter for incremental fetch
-    const { searchParams } = new URL(req.url);
-    const sinceParam = searchParams.get("since");
-
-    // Build Outlook filter
-    let filter = "";
-    if (sinceParam) {
-      const sinceDate = new Date(sinceParam).toISOString();
-      filter = `&$filter=receivedDateTime gt ${sinceDate}`;
+    // Validate and refresh token if needed
+    const isValid = await emailService.validateToken(accessToken!, 'microsoft');
+    if (!isValid && refreshToken) {
+      console.log("🔄 Refreshing expired token...");
+      const refreshed = await emailService.refreshMicrosoftToken(refreshToken);
+      if (refreshed) {
+        accessToken = refreshed.access_token;
+        (session as any).access_token = accessToken;
+      }
     }
 
-    // Fetch emails from Outlook
-    let response = await fetch(
+    const { searchParams } = new URL(req.url);
+    const sinceParam = searchParams.get("since");
+    const filter = sinceParam
+      ? `&$filter=receivedDateTime gt ${new Date(sinceParam).toISOString()}`
+      : "";
+
+    // Fetch from Microsoft Graph with timeout
+    const response = await fetch(
       `https://graph.microsoft.com/v1.0/me/messages?$top=50${filter}&$orderby=receivedDateTime DESC`,
-      {
+      { 
         headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(15000)
       }
     );
 
-    // Refresh token if expired
-    if (response.status === 401 && refreshToken) {
-      const refreshed = await refreshAccessToken(refreshToken);
-      if (refreshed) {
-        accessToken = refreshed.access_token;
-        response = await fetch(
-          `https://graph.microsoft.com/v1.0/me/messages?$top=50${filter}&$orderby=receivedDateTime DESC`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-      }
-    }
-
-    if (!response.ok) {
-      throw new Error(`Outlook API error: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Outlook API error: ${response.status}`);
 
     const data = await response.json();
-    const messages = data.value || [];
+    const messages: OutlookEmail[] = data.value || [];
 
-    // Parse and format emails
-    const formattedEmails = await Promise.all(
-      messages.map(async (email: any) => {
-        const emailData = {
-          messageId: email.id,
-          subject: email.subject || "(No subject)",
-          from: email.from?.emailAddress?.address || "Unknown",
-          to: email.toRecipients?.[0]?.emailAddress?.address || session.user?.email,
-          date: new Date(email.receivedDateTime),
-          body: email.body?.content || "",
-          isRead: email.isRead,
+    // Parse and analyze emails with enhanced detection
+    const formattedEmails: IEmail[] = await Promise.all(
+      messages.map(async (msg) => {
+        const body = msg.body?.content || "";
+        const links = extractLinks(body);
+        
+        const email: IEmail = {
+          messageId: msg.id,
+          subject: msg.subject || "(No subject)",
+          from: msg.from?.emailAddress?.address || "Unknown",
+          to: msg.toRecipients?.[0]?.emailAddress?.address || session.user.email!,
+          date: new Date(msg.receivedDateTime),
+          body,
+          isRead: msg.isRead,
+          isPotentialPhishing: false,
+          phishingScore: 0,
+          phishingReasons: [],
         };
 
-        const phishingAnalysis = await analyzePhishing(emailData);
+        // Enhanced phishing analysis
+        const analysis = await emailService.analyzePhishing({
+          from: email.from,
+          subject: email.subject,
+          body: email.body,
+          links
+        });
 
-        return {
-          ...emailData,
-          ...phishingAnalysis,
-        };
+        // Update email with analysis results
+        email.isPotentialPhishing = analysis.isPotentialPhishing;
+        email.phishingScore = analysis.phishingScore;
+        email.phishingReasons = analysis.phishingReasons;
+        email.prediction = analysis.mlPrediction || (analysis.isPotentialPhishing ? "Potential Phishing" : "Safe Email");
+        email.confidence = analysis.confidence;
+        email.model_used = analysis.modelUsed;
+        email.virusTotalResult = analysis.virusTotalResult;
+        email.googleSafeBrowsingResult = analysis.googleSafeBrowsingResult;
+        email.heuristicScore = analysis.heuristicScore;
+        email.mlScore = analysis.mlScore;
+
+        return email;
       })
     );
 
-    // Update user's emails in database
-    const user = await User.findOne({ email: session.user.email });
-    if (user) {
-      // Get existing message IDs
-      const existingIds = new Set(user.emails.map((e: any) => e.messageId));
+    // Update user's stored emails
+    const user = await User.findOne({ email: session.user.email }) as IUser | null;
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-      // Filter out duplicates
-      const newEmails = formattedEmails.filter(
-        (email) => !existingIds.has(email.messageId)
-      );
+    const existingIds = new Set(user.emails.map((e) => e.messageId));
+    const newEmails = formattedEmails.filter((e) => !existingIds.has(e.messageId));
 
-      if (newEmails.length > 0) {
-        user.emails.push(...newEmails);
-        user.lastEmailSync = new Date();
-        await user.save();
-        console.log(`✅ Added ${newEmails.length} new Outlook emails for ${session.user.email}`);
-      } else {
-        console.log(`ℹ️ No new emails to add for ${session.user.email}`);
-      }
+    if (newEmails.length > 0) {
+      user.emails.push(...newEmails);
+      user.lastEmailSync = new Date();
+      await user.save();
+      console.log(`✅ Added ${newEmails.length} new Outlook emails for ${session.user.email}`);
+    } else {
+      console.log(`ℹ️ No new emails to add for ${session.user.email}`);
     }
 
     return NextResponse.json({
       success: true,
-      count: formattedEmails.length,
-      newEmailsAdded: formattedEmails.length,
+      totalFetched: formattedEmails.length,
+      newEmailsAdded: newEmails.length,
+      phishingDetected: formattedEmails.filter(e => e.isPotentialPhishing).length
     });
   } catch (error) {
     console.error("❌ Outlook fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch Outlook emails" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch Outlook emails" }, { status: 500 });
   }
 }

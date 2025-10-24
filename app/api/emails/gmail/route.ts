@@ -1,177 +1,133 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import { EmailService } from "@/lib/emailService";
 
-const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
-
-async function refreshAccessToken(refresh_token: string) {
-  try {
-    const response = await fetch(GOOGLE_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: process.env.GOOGLE_ID,
-        client_secret: process.env.GOOGLE_SECRET,
-        refresh_token,
-        grant_type: "refresh_token",
-      }),
-    });
-
-    const data = await response.json();
-    return {
-      access_token: data.access_token,
-      expires_in: data.expires_in,
-    };
-  } catch (error) {
-    console.error("❌ Error refreshing access token:", error);
-    return null;
-  }
-}
-
+/* =========================
+   🔹 Gmail Fetch Helpers
+   ========================= */
 async function fetchEmailDetails(messageId: string, accessToken: string) {
-  const response = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
+
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(url, { 
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!res.ok) throw new Error(`Gmail fetch error ${res.status}`);
+      return await res.json();
+    } catch (err: any) {
+      console.warn(`⚠️ Gmail fetch attempt ${i + 1} failed:`, err.message);
+      if (i === 2) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
     }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch email details: ${response.status}`);
   }
-
-  return response.json();
 }
 
 function parseEmailBody(payload: any): string {
-  if (payload.body?.data) {
-    return Buffer.from(payload.body.data, "base64").toString("utf-8");
-  }
-
-  if (payload.parts) {
+  if (payload.body?.data) return Buffer.from(payload.body.data, "base64").toString("utf-8");
+  if (payload.parts)
     for (const part of payload.parts) {
-      if (part.mimeType === "text/html" && part.body?.data) {
-        return Buffer.from(part.body.data, "base64").toString("utf-8");
-      }
-      if (part.mimeType === "text/plain" && part.body?.data) {
-        return Buffer.from(part.body.data, "base64").toString("utf-8");
-      }
-      if (part.parts) {
-        const nestedBody = parseEmailBody(part);
-        if (nestedBody) return nestedBody;
-      }
+      const text = parseEmailBody(part);
+      if (text) return text;
     }
-  }
-
   return "";
 }
 
 function getHeader(headers: any[], name: string): string {
-  const header = headers.find((h) => h.name.toLowerCase() === name.toLowerCase());
-  return header?.value || "";
+  return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
 }
 
-async function analyzePhishing(email: any) {
-  const reasons: string[] = [];
-  let score = 0;
-
-  // Check for suspicious sender
-  if (email.from.includes("noreply") || email.from.includes("no-reply")) {
-    reasons.push("Sender uses 'noreply' address");
-    score++;
-  }
-
-  // Check for urgency keywords
-  const urgentKeywords = ["urgent", "immediate", "action required", "verify", "suspend", "expire"];
-  if (urgentKeywords.some((keyword) => email.subject.toLowerCase().includes(keyword))) {
-    reasons.push("Subject contains urgency keywords");
-    score++;
-  }
-
-  // Check for suspicious links (basic check)
-  if (email.body.includes("http://") || email.body.includes("https://")) {
-    const linkCount = (email.body.match(/https?:\/\//g) || []).length;
-    if (linkCount > 5) {
-      reasons.push("Contains many external links");
-      score++;
-    }
-  }
-
-  return {
-    isPotentialPhishing: score >= 2,
-    phishingScore: score,
-    phishingReasons: reasons,
-  };
+function extractLinks(text: string): string[] {
+  const linkRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi;
+  return text.match(linkRegex) || [];
 }
 
+/* =========================
+   🔹 Enhanced Email Processing
+   ========================= */
+  
+ 
+
+/* =========================
+   🔹 GET Handler (Main)
+   ========================= */
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  if (!session?.user?.email) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
+  await dbConnect();
+  const emailService = EmailService.getInstance();
+  
   let accessToken = (session as any).access_token;
   const refreshToken = (session as any).refresh_token;
 
   try {
-    await dbConnect();
-
-    // Get 'since' parameter for incremental fetch
-    const { searchParams } = new URL(req.url);
-    const sinceParam = searchParams.get("since");
-
-    // Build Gmail query
-    let query = "in:inbox";
-    if (sinceParam) {
-      const sinceDate = new Date(sinceParam);
-      const gmailDateFormat = Math.floor(sinceDate.getTime() / 1000);
-      query += ` after:${gmailDateFormat}`;
-    }
-
-    // Fetch message list
-    let response = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
-
-    // Refresh token if expired
-    if (response.status === 401 && refreshToken) {
-      const refreshed = await refreshAccessToken(refreshToken);
+    // Validate and refresh token if needed
+    const isValid = await emailService.validateToken(accessToken, 'google');
+    if (!isValid && refreshToken) {
+      console.log("🔄 Refreshing expired token...");
+      const refreshed = await emailService.refreshGoogleToken(refreshToken);
       if (refreshed) {
         accessToken = refreshed.access_token;
-        response = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
+        // Update session with new token
+        (session as any).access_token = accessToken;
       }
     }
 
-    if (!response.ok) {
-      throw new Error(`Gmail API error: ${response.status}`);
+    // Gmail Query
+    const { searchParams } = new URL(req.url);
+    const sinceParam = searchParams.get("since");
+    const query = sinceParam
+      ? `in:inbox after:${Math.floor(new Date(sinceParam).getTime() / 1000)}`
+      : "in:inbox";
+
+    // Fetch message list with timeout
+    const listRes = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`,
+      { 
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(15000)
+      }
+    );
+
+    if (!listRes.ok) throw new Error(`Gmail list fetch failed: ${listRes.status}`);
+    const { messages = [] } = await listRes.json();
+
+    // Fetch full emails in optimized batches
+    const BATCH_SIZE = 3; // From config
+    const fullEmails: any[] = [];
+    
+    for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+      const batch = messages.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map((msg: any) => fetchEmailDetails(msg.id, accessToken))
+      );
+      
+      const successful = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r: any) => r.value);
+      
+      fullEmails.push(...successful);
+      
+      // Small delay between batches to avoid rate limiting
+      if (i + BATCH_SIZE < messages.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
-    const data = await response.json();
-    const messages = data.messages || [];
-
-    // Fetch full details for each message
-    const emailPromises = messages.map((msg: any) =>
-      fetchEmailDetails(msg.id, accessToken)
-    );
-    const fullEmails = await Promise.all(emailPromises);
-
-    // Parse and format emails
+    // Parse and analyze emails with enhanced detection
     const formattedEmails = await Promise.all(
       fullEmails.map(async (email: any) => {
         const headers = email.payload.headers;
         const body = parseEmailBody(email.payload);
-
+        const links = extractLinks(body);
+        
         const emailData = {
           messageId: email.id,
           subject: getHeader(headers, "Subject"),
@@ -182,46 +138,49 @@ export async function GET(req: NextRequest) {
           isRead: !email.labelIds?.includes("UNREAD"),
         };
 
-        const phishingAnalysis = await analyzePhishing(emailData);
+        // Enhanced phishing analysis
+        const analysis = await emailService.analyzePhishing({
+          from: emailData.from,
+          subject: emailData.subject,
+          body: emailData.body,
+          links
+        });
 
         return {
           ...emailData,
-          ...phishingAnalysis,
+          ...analysis,
+          // Additional fields for dashboard - preserve ML model prediction
+          prediction: analysis.mlPrediction || (analysis.isPotentialPhishing ? "Potential Phishing" : "Safe Email"),
+          confidence: analysis.confidence,
+          model_used: analysis.modelUsed,
+          virusTotalResult: analysis.virusTotalResult,
+          googleSafeBrowsingResult: analysis.googleSafeBrowsingResult
         };
       })
     );
 
-    // Update user's emails in database
+    // Save to database
     const user = await User.findOne({ email: session.user.email });
     if (user) {
-      // Get existing message IDs
       const existingIds = new Set(user.emails.map((e: any) => e.messageId));
-
-      // Filter out duplicates
-      const newEmails = formattedEmails.filter(
-        (email) => !existingIds.has(email.messageId)
-      );
-
-      if (newEmails.length > 0) {
+      const newEmails = formattedEmails.filter((e) => !existingIds.has(e.messageId));
+      
+      if (newEmails.length) {
         user.emails.push(...newEmails);
         user.lastEmailSync = new Date();
         await user.save();
-        console.log(`✅ Added ${newEmails.length} new Gmail emails for ${session.user.email}`);
-      } else {
-        console.log(`ℹ️ No new emails to add for ${session.user.email}`);
+        console.log(`✅ Added ${newEmails.length} new emails for ${session.user.email}`);
       }
     }
 
     return NextResponse.json({
       success: true,
-      count: formattedEmails.length,
+      totalFetched: formattedEmails.length,
       newEmailsAdded: formattedEmails.length,
+      phishingDetected: formattedEmails.filter(e => e.isPotentialPhishing).length
     });
-  } catch (error) {
-    console.error("❌ Gmail fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch Gmail emails" },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("❌ Gmail fetch error:", err);
+    return NextResponse.json({ error: "Failed to fetch Gmail emails" }, { status: 500 });
   }
 }
