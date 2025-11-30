@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
@@ -6,15 +5,6 @@ import AzureADProvider from 'next-auth/providers/azure-ad';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
-=======
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import AzureADProvider from "next-auth/providers/azure-ad";
-import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/models/User";
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4
 
 export const handler = NextAuth({
   providers: [
@@ -37,18 +27,12 @@ export const handler = NextAuth({
       async authorize(credentials) {
         await dbConnect();
         const user = await User.findOne({ email: credentials?.email });
-<<<<<<< HEAD
-        if (!user) throw new Error('No user found');
-        const valid = await bcrypt.compare(credentials!.password, user.password);
-        if (!valid) throw new Error('Invalid password');
-        return { id: user._id.toString(), email: user.email, name:user.name};
-=======
+
         if (!user || !user.password) throw new Error("No user found");
         if (!credentials?.password) throw new Error("No password provided");
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) throw new Error("Invalid password");
         return { id: (user._id as any).toString(), email: user.email, name: user.name };
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4
       },
     }),
   ],

@@ -9,26 +9,6 @@ export interface IUrlSafetyResult {
   lastChecked: Date;
 }
 
-<<<<<<< HEAD
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please provide a name.'],
-  },
-  email: {
-    type: String,
-    required: [true, 'Please provide an email.'],
-    unique: true, // Ensures no two users can have the same email
-    match: [/.+\@.+\..+/, 'Please fill a valid email address'],
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password.'],
-  },
-}, { timestamps: true }); // Automatically adds createdAt and updatedAt
-
-export default mongoose.models.User || mongoose.model('User', UserSchema);
-=======
 export interface IEmail {
   messageId: string;
   subject: string;
@@ -111,4 +91,3 @@ const UserSchema = new Schema<IUser>(
 );
 
 export default (mongoose.models.User as Model<IUser>) || mongoose.model<IUser>("User", UserSchema);
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4

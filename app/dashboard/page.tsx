@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEmails } from "@/components/EmailContext";
 import { 
@@ -26,11 +27,6 @@ interface UrlSafetyResult {
   lastChecked: Date;
 }
 
-<<<<<<< HEAD
-export default function Dashboard() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-=======
 interface Email {
   messageId: string;
   subject: string;
@@ -155,17 +151,14 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4
 
   useEffect(() => {
     if (status === "authenticated") {
       fetch("/api/save-user", { method: "POST" });
-<<<<<<< HEAD
-=======
       if (emails.length === 0) fetchEmails(true);
       const intervalId = setInterval(() => fetchEmails(false), 5 * 60 * 1000);
       return () => clearInterval(intervalId);
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4
+
     } else if (status === "unauthenticated") {
       router.push("/login");
     }
@@ -173,14 +166,8 @@ export default function Dashboard() {
 
   if (status === "loading") return <p className="text-center mt-10">Checking authentication...</p>;
 
-<<<<<<< HEAD
+
   // Once authenticated, show dashboard content
-  if (status === "authenticated") {
-    return (
-      <div className="p-10 text-center">
-        <h1 className="text-3xl font-bold">Welcome, {session.user?.name} 👋</h1>
-        <p className="text-gray-600 mt-3">You have successfully logged in.</p>
-=======
   const formatDate = (date: Date) => new Date(date).toLocaleString();
 
   if (status === "authenticated") {
@@ -790,7 +777,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4
       </div>
     );
   }
