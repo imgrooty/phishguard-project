@@ -3,20 +3,66 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { EmailService } from "@/lib/emailService";
 
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  const isExtension = !!origin && origin.startsWith('chrome-extension://');
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
+  if (isExtension && origin) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  } else {
+    headers['Access-Control-Allow-Origin'] = '*';
+  }
+
+  return new NextResponse(null, {
+    status: 204,
+    headers
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const origin = req.headers.get('origin');
+    const isExtension = !!origin && origin.startsWith('chrome-extension://');
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const headers: Record<string, string> = {};
+      if (isExtension && origin) {
+        headers['Access-Control-Allow-Origin'] = origin;
+        headers['Access-Control-Allow-Credentials'] = 'true';
+      }
+      return NextResponse.json({ error: 'Unauthorized' }, {
+        status: 401,
+        headers
+      });
     }
 
     const body = await req.json();
-    const { subject, from, bodyText, links } = body || {};
+    const {
+      subject = "Browser Extension Analysis",
+      from = "External Source",
+      bodyText,
+      links
+    } = body || {};
 
-    if (!subject || !from || !bodyText) {
+    if (!bodyText) {
+      const headers: Record<string, string> = {};
+      if (isExtension && origin) {
+        headers['Access-Control-Allow-Origin'] = origin;
+        headers['Access-Control-Allow-Credentials'] = 'true';
+      }
       return NextResponse.json({ 
-        error: 'Missing required fields: subject, from, bodyText' 
-      }, { status: 400 });
+        error: 'Missing required field: bodyText'
+      }, {
+        status: 400,
+        headers
+      });
     }
 
     const emailService = EmailService.getInstance();
@@ -29,6 +75,12 @@ export async function POST(req: NextRequest) {
       links: links || []
     });
 
+    const responseHeaders: Record<string, string> = {};
+    if (isExtension && origin) {
+      responseHeaders['Access-Control-Allow-Origin'] = origin;
+      responseHeaders['Access-Control-Allow-Credentials'] = 'true';
+    }
+
     return NextResponse.json({
       success: true,
       isPotentialPhishing: analysis.isPotentialPhishing,
@@ -39,6 +91,8 @@ export async function POST(req: NextRequest) {
       heuristicScore: analysis.heuristicScore,
       mlScore: analysis.mlScore,
       virusTotalResult: analysis.virusTotalResult
+    }, {
+      headers: responseHeaders
     });
   } catch (err) {
     console.error('Phishing analysis error:', err);
