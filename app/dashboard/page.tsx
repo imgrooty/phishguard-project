@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEmails } from "@/components/EmailContext";
 import { 
   Shield, 
@@ -12,11 +12,15 @@ import {
   Brain, 
   Globe, 
   BarChart3,
-  Clock,
   Mail,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Search,
+  Activity,
+  Settings
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import DashboardSidebar from "@/components/DashboardSidebar";
 
 interface UrlSafetyResult {
   url: string;
@@ -52,15 +56,18 @@ interface Email {
   mlScore?: number;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get("view") || "overview";
   const { emails, setEmails, lastSync, setLastSync, addNewEmails } = useEmails();
   const [loading, setLoading] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [filter, setFilter] = useState<'all' | 'safe' | 'phishing'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'risk'>('date');
   const [showEmailList, setShowEmailList] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Helper functions
   const sanitizeHTML = (html: string): string => {
@@ -102,8 +109,23 @@ export default function Dashboard() {
   // Filter and sort emails
   const filteredEmails = emails
     .filter(email => {
-      if (filter === 'phishing') return email.isPotentialPhishing;
-      if (filter === 'safe') return !email.isPotentialPhishing;
+      // Filter by safety
+      if (filter === 'phishing') {
+        if (!email.isPotentialPhishing) return false;
+      }
+      if (filter === 'safe') {
+        if (email.isPotentialPhishing) return false;
+      }
+
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          email.subject.toLowerCase().includes(query) ||
+          email.from.toLowerCase().includes(query)
+        );
+      }
+
       return true;
     })
     .sort((a, b) => {
@@ -125,6 +147,73 @@ export default function Dashboard() {
     }
     return <CheckCircle className="w-5 h-5 text-green-500" />;
   };
+
+  const RiskGauge = ({ score }: { score: number }) => {
+    const percentage = score * 100;
+    const color = score > 0.8 ? "#ef4444" : score > 0.5 ? "#f97316" : score > 0.2 ? "#eab308" : "#22c55e";
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percentage / 100) * circumference;
+
+    return (
+      <div className="relative flex items-center justify-center">
+        <svg className="w-32 h-32 transform -rotate-90">
+          <circle
+            cx="64"
+            cy="64"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            className="text-gray-100"
+          />
+          <motion.circle
+            cx="64"
+            cy="64"
+            r={radius}
+            stroke={color}
+            strokeWidth="8"
+            fill="transparent"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-2xl font-bold leading-none" style={{ color }}>{percentage.toFixed(0)}%</span>
+          <span className="text-[10px] uppercase font-bold text-gray-400 mt-1">Risk</span>
+        </div>
+      </div>
+    );
+  };
+
+  const StatCardSkeleton = () => (
+    <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 animate-pulse">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-gray-100 rounded-xl" />
+        <div className="space-y-2">
+          <div className="h-3 w-16 bg-gray-100 rounded" />
+          <div className="h-5 w-8 bg-gray-100 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const EmailListItemSkeleton = () => (
+    <div className="p-4 border-b border-gray-50 animate-pulse">
+      <div className="flex justify-between mb-3">
+        <div className="h-4 w-3/4 bg-gray-50 rounded" />
+        <div className="h-3 w-12 bg-gray-50 rounded" />
+      </div>
+      <div className="h-3 w-1/2 bg-gray-50 rounded mb-4" />
+      <div className="flex justify-between">
+        <div className="h-5 w-16 bg-gray-50 rounded-full" />
+        <div className="h-3 w-10 bg-gray-50 rounded" />
+      </div>
+    </div>
+  );
 
   const fetchEmails = async (isInitialLoad = false) => {
     if (status !== "authenticated") return;
@@ -172,129 +261,155 @@ export default function Dashboard() {
 
   if (status === "authenticated") {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-            Welcome, {session.user?.name} 👋
-          </h1>
-                <p className="text-gray-600 mt-1">Email Security Dashboard</p>
-              </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => fetchEmails(false)}
-              disabled={loading}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  {loading ? "Syncing..." : "Sync Emails"}
-                </button>
-                <button
-                  onClick={async () => {
-                    setLoading(true);
-                    try {
-                      const response = await fetch('/api/reanalyze-emails', { method: 'POST' });
-                      const result = await response.json();
-                      if (result.success) {
-                        alert(`Re-analysis complete: ${result.updatedCount} emails updated`);
-                        // Refresh the page to show updated data
-                        window.location.reload();
-                      } else {
-                        alert(`Re-analysis failed: ${result.error}`);
+      <div className="flex min-h-screen bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-blue-100">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col min-h-screen overflow-y-auto relative">
+          {/* Header */}
+          <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200/50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center py-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    {currentView === 'overview' ? `Hello, ${session?.user?.name?.split(' ')[0]} 👋` :
+                     currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+                  </h1>
+                  <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Email Security Intelligence</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => fetchEmails(false)}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-blue-600 group-hover:rotate-180 transition-transform duration-500 ${loading ? 'animate-spin' : ''}`} />
+                    <span className="text-sm font-semibold">{loading ? "Syncing..." : "Sync"}</span>
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        const response = await fetch('/api/reanalyze-emails', { method: 'POST' });
+                        const result = await response.json();
+                        if (result.success) {
+                          alert(`Re-analysis complete: ${result.updatedCount} emails updated`);
+                          window.location.reload();
+                        } else {
+                          alert(`Re-analysis failed: ${result.error}`);
+                        }
+                      } catch (error) {
+                        alert(`Re-analysis failed: ${error}`);
+                      } finally {
+                        setLoading(false);
                       }
-                    } catch (error) {
-                      alert(`Re-analysis failed: ${error}`);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-300 transition-colors"
-                >
-                  <Brain className="w-4 h-4" />
-                  Re-analyze ML
-            </button>
-            {lastSync && (
-                  <div className="text-sm text-gray-500">
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    Last sync: {formatDate(lastSync)}
-                  </div>
-                )}
+                    }}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group"
+                  >
+                    <Brain className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-semibold">Re-analyze</span>
+                  </motion.button>
+                  {lastSync && (
+                    <div className="hidden md:flex flex-col items-end text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                      <span>Last sync</span>
+                      <span className="text-gray-600 font-black">
+                        {new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(new Date(lastSync))}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </header>
 
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+          {/* Mobile View Switcher */}
+          <div className="lg:hidden border-b border-gray-200/50 bg-white/50 backdrop-blur-md px-4 py-3 overflow-x-auto flex gap-2 no-scrollbar sticky top-[73px] z-20">
+            {[
+              { id: 'overview', label: 'Overview', icon: <Activity className="w-3.5 h-3.5" /> },
+              { id: 'inbox', label: 'Inbox', icon: <Mail className="w-3.5 h-3.5" /> },
+              { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+              { id: 'security', label: 'Security', icon: <Shield className="w-3.5 h-3.5" /> },
+              { id: 'settings', label: 'Settings', icon: <Settings className="w-3.5 h-3.5" /> }
+            ].map((view) => (
+              <button
+                key={view.id}
+                onClick={() => router.push(`/dashboard?view=${view.id}`)}
+                className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest whitespace-nowrap px-4 py-2 rounded-xl transition-all ${
+                  currentView === view.id
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                    : 'bg-white text-gray-500 border border-gray-100'
+                }`}
+              >
+                {view.icon}
+                {view.label}
+              </button>
+            ))}
+          </div>
+        <motion.div initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 flex-1"
+        >
+          {currentView === 'overview' && (
+            <>
           {/* Statistics Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                <div className="p-2 sm:p-3 bg-blue-100 rounded-lg mb-2 sm:mb-0">
-                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600" />
-                </div>
-                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Total Emails</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{stats.total}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                <div className="p-2 sm:p-3 bg-green-100 rounded-lg mb-2 sm:mb-0">
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" />
-                </div>
-                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Safe Emails</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{stats.safe}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                <div className="p-2 sm:p-3 bg-red-100 rounded-lg mb-2 sm:mb-0">
-                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-red-600" />
-                </div>
-                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Phishing</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">{stats.phishing}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                <div className="p-2 sm:p-3 bg-purple-100 rounded-lg mb-2 sm:mb-0">
-                  <Brain className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-600" />
-                </div>
-                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">ML Predictions</p>
-                  <p className="text-sm sm:text-base lg:text-lg font-bold text-purple-600">
-                    {stats.mlPredictions.safe}/{stats.mlPredictions.phishing}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-6 border">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start">
-                <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg mb-2 sm:mb-0">
-                  <Shield className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-yellow-600" />
-                </div>
-                <div className="sm:ml-3 lg:ml-4 text-center sm:text-left">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Unsafe URLs</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">{stats.unsafeUrls}</p>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            {loading && emails.length === 0 ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <motion.div whileHover={{ y: -4 }} className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex items-center gap-4 transition-all hover:shadow-md">
+                  <div className="p-3 bg-blue-50 rounded-xl text-blue-600"><Mail className="w-6 h-6" /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</p>
+                    <p className="text-2xl font-black text-gray-900 leading-tight">{stats.total}</p>
+                  </div>
+                </motion.div>
+                <motion.div whileHover={{ y: -4 }} className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex items-center gap-4 transition-all hover:shadow-md">
+                  <div className="p-3 bg-green-50 rounded-xl text-green-600"><CheckCircle className="w-6 h-6" /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Safe</p>
+                    <p className="text-2xl font-black text-green-600 leading-tight">{stats.safe}</p>
+                  </div>
+                </motion.div>
+                <motion.div whileHover={{ y: -4 }} className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex items-center gap-4 transition-all hover:shadow-md">
+                  <div className="p-3 bg-red-50 rounded-xl text-red-600"><AlertTriangle className="w-6 h-6" /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phishing</p>
+                    <p className="text-2xl font-black text-red-600 leading-tight">{stats.phishing}</p>
+                  </div>
+                </motion.div>
+                <motion.div whileHover={{ y: -4 }} className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex items-center gap-4 transition-all hover:shadow-md">
+                  <div className="p-3 bg-purple-50 rounded-xl text-purple-600"><Brain className="w-6 h-6" /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ML Prediction</p>
+                    <p className="text-lg font-black text-purple-600 leading-tight">{stats.mlPredictions.safe}/{stats.mlPredictions.phishing}</p>
+                  </div>
+                </motion.div>
+                <motion.div whileHover={{ y: -4 }} className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 flex items-center gap-4 transition-all hover:shadow-md">
+                  <div className="p-3 bg-yellow-50 rounded-xl text-yellow-600"><Activity className="w-6 h-6" /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Unsafe URLs</p>
+                    <p className="text-2xl font-black text-yellow-600 leading-tight">{stats.unsafeUrls}</p>
+                  </div>
+                </motion.div>
+              </>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            </>
+          )}
+
+          {(currentView === 'overview' || currentView === 'inbox') && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Mobile Toggle Button */}
             <div className="lg:hidden flex justify-between items-center mb-4">
               <button
@@ -316,34 +431,52 @@ export default function Dashboard() {
 
             {/* Email List */}
             <div className={`lg:col-span-1 ${showEmailList ? 'block' : 'hidden lg:block'}`}>
-              <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border">
-                <div className="p-3 sm:p-4 lg:p-6 border-b">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2">
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Email Inbox</h2>
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-                      <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value as any)}
-                        className="text-xs sm:text-sm border rounded-lg px-2 sm:px-3 py-1"
-                      >
-                        <option value="all">All</option>
-                        <option value="safe">Safe</option>
-                        <option value="phishing">Phishing</option>
-                      </select>
-                    </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[600px]">
+                <div className="p-4 border-b border-gray-50 bg-white sticky top-0 z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-900">Inbox</h2>
+                    <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded-lg text-gray-500 uppercase tracking-tight">
+                      {filteredEmails.length} Messages
+                    </span>
                   </div>
                   
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
-                      className="text-xs sm:text-sm border rounded-lg px-2 sm:px-3 py-1"
-                    >
-                      <option value="date">Sort by Date</option>
-                      <option value="risk">Sort by Risk</option>
-                    </select>
+                  <div className="space-y-3">
+                    <div className="relative group">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                      <input
+                        type="text"
+                        placeholder="Search by sender or subject..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:border-blue-500/50 transition-all"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <BarChart3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as any)}
+                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
+                        >
+                          <option value="date">Newest</option>
+                          <option value="risk">High Risk</option>
+                        </select>
+                      </div>
+                      <div className="relative flex-1">
+                        <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        <select
+                          value={filter}
+                          onChange={(e) => setFilter(e.target.value as any)}
+                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
+                        >
+                          <option value="all">All</option>
+                          <option value="safe">Safe</option>
+                          <option value="phishing">Phishing</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ML Model Summary */}
@@ -371,32 +504,49 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div className="max-h-[400px] sm:max-h-[500px] lg:max-h-[600px] overflow-y-auto">
+                <div className="flex-1 overflow-y-auto bg-gray-50/30">
                   {filteredEmails.length === 0 ? (
-                    <div className="p-4 sm:p-6 text-center">
-                      <Mail className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-4" />
-                      <p className="text-sm sm:text-base text-gray-500">
-                        {loading ? "Loading emails..." : "No emails found"}
-                      </p>
+                    <div className="p-8 text-center h-full flex flex-col items-center justify-center">
+                      {loading ? (
+                        <div className="w-full space-y-1">
+                          <EmailListItemSkeleton />
+                          <EmailListItemSkeleton />
+                          <EmailListItemSkeleton />
+                          <EmailListItemSkeleton />
+                        </div>
+                      ) : (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                          <Mail className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No messages found</p>
+                        </motion.div>
+                      )}
                     </div>
                   ) : (
-                    <div className="divide-y">
-                      {filteredEmails.map((email) => (
-                        <div
-                          key={email.messageId}
-                          onClick={() => {
-                            setSelectedEmail(email);
-                            // On mobile, hide the email list when an email is selected
-                            if (window.innerWidth < 1024) {
-                              setShowEmailList(false);
-                            }
-                          }}
-                          className={`p-3 sm:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
-                            selectedEmail?.messageId === email.messageId
-                              ? "bg-blue-50 border-r-2 sm:border-r-4 border-blue-500"
-                              : ""
-                          }`}
-                        >
+                    <div className="divide-y divide-gray-100/50">
+                      <AnimatePresence mode="popLayout">
+                        {filteredEmails.map((email) => (
+                          <motion.div
+                            key={email.messageId}
+                            layout
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            onClick={() => {
+                              setSelectedEmail(email);
+                              if (window.innerWidth < 1024) setShowEmailList(false);
+                            }}
+                            className={`p-4 cursor-pointer transition-all relative group ${
+                              selectedEmail?.messageId === email.messageId
+                                ? "bg-white shadow-inner"
+                                : "hover:bg-white"
+                            }`}
+                          >
+                            {selectedEmail?.messageId === email.messageId && (
+                              <motion.div
+                                layoutId="active-pill"
+                                className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                              />
+                            )}
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               {getRiskIcon(email)}
@@ -422,30 +572,23 @@ export default function Dashboard() {
                             </div>
                           </div>
 
-                          {/* ML Model Prediction Display */}
+                          {/* ML Preview */}
                           {email.prediction && (
-                            <div className="mt-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
-                              <div className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-1">
-                                  <Brain className="w-3 h-3 text-purple-600" />
-                                  <span className="text-purple-700 font-medium">ML:</span>
-                                </div>
-                                <span className="text-purple-900 font-semibold truncate ml-2">
-                                  {email.prediction}
-                                </span>
+                            <div className="mt-3 flex items-center justify-between bg-purple-50/50 p-1.5 rounded-lg border border-purple-100/50">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Brain className="w-3 h-3 text-purple-500" />
+                                <span className="text-[10px] font-bold text-purple-700 truncate uppercase tracking-tighter">{email.prediction}</span>
                               </div>
                               {email.confidence && (
-                                <div className="flex items-center justify-between text-xs mt-1">
-                                  <span className="text-purple-600">Confidence:</span>
-                                  <span className="text-purple-800 font-medium">
-                                    {(email.confidence * 100).toFixed(1)}%
-                                  </span>
-                                </div>
+                                <span className="text-[9px] font-black text-purple-400 bg-white px-1 rounded-md border border-purple-50">
+                                  {(email.confidence * 100).toFixed(0)}%
+                                </span>
                               )}
                             </div>
                           )}
-                        </div>
+                        </motion.div>
                       ))}
+                      </AnimatePresence>
                     </div>
             )}
                 </div>
@@ -454,11 +597,19 @@ export default function Dashboard() {
 
             {/* Email Content */}
             <div className={`lg:col-span-2 ${!showEmailList ? 'col-span-1' : ''}`}>
-              <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border h-[400px] sm:h-[500px] lg:h-[600px] overflow-y-auto">
-            {selectedEmail ? (
-                  <div className="p-3 sm:p-4 lg:p-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 h-[600px] overflow-hidden flex flex-col">
+                <AnimatePresence mode="wait">
+                  {selectedEmail ? (
+                    <motion.div
+                      key={selectedEmail.messageId}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="flex-1 overflow-y-auto"
+                    >
+                    <div className="p-6">
                     {/* Email Header */}
-                    <div className="border-b pb-4 sm:pb-6 mb-4 sm:mb-6">
+                    <div className="border-b border-gray-100 pb-6 mb-6">
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 sm:mb-4 gap-2">
                         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                           {selectedEmail.subject}
@@ -484,11 +635,26 @@ export default function Dashboard() {
                   </div>
 
                     {/* Comprehensive Analysis Section */}
-                    <div className="mb-4 sm:mb-6">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-                        <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
-                        Security Analysis
-                      </h3>
+                    <div className="mb-8">
+                      <div className="flex flex-col md:flex-row gap-8 items-center bg-blue-50/30 p-6 rounded-3xl border border-blue-100/50 mb-8">
+                        <RiskGauge score={selectedEmail.phishingScore} />
+                        <div className="flex-1 text-center md:text-left">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">Security Analysis</h3>
+                          <p className="text-gray-500 text-sm mb-4 leading-relaxed">
+                            Our AI models have analyzed this email for phishing attempts, malicious links, and suspicious metadata.
+                          </p>
+                          <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getRiskColor(selectedEmail.phishingScore)}`}>
+                              {selectedEmail.isPotentialPhishing ? 'Threat Detected' : 'Safe Content'}
+                            </span>
+                            {selectedEmail.confidence && (
+                              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-100 text-purple-700 border border-purple-200">
+                                AI Confidence: {(selectedEmail.confidence * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Analysis Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -764,22 +930,49 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <Mail className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                      <p className="text-gray-500 text-sm sm:text-lg">Select an email to view analysis</p>
                     </div>
-                  </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="h-full flex flex-col items-center justify-center p-12 text-center"
+                  >
+                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-200">
+                      <Mail className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Select an email</h3>
+                    <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                      Choose any email from your inbox to see a complete AI security breakdown and content preview.
+                    </p>
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </div>
           </div>
         </div>
+      )}
+
+          {(currentView !== 'overview' && currentView !== 'inbox') && (
+            <div className="flex flex-col items-center justify-center h-[600px] bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <Activity className="w-16 h-16 text-gray-200 mb-4" />
+              <h3 className="text-xl font-bold text-gray-900">Coming Soon</h3>
+              <p className="text-gray-500 text-sm">The {currentView} view is under development.</p>
+            </div>
+          )}
+        </motion.div>
       </div>
+    </div>
     );
   }
 
   return null;
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center font-bold text-gray-400 uppercase tracking-widest animate-pulse">Loading Dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
 }
