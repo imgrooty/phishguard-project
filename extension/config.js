@@ -4,20 +4,20 @@
 const CONFIG = {
   // Development environment (default)
   development: {
-    API_URL: 'http://localhost:3000/api/phishing/analyze',
-    HOST_PERMISSIONS: ['http://localhost:3000/*']
+    API_URL: 'http://localhost:3000/api/phishing/analyze'
   },
   
   // Production environment
   // Update this URL to match your production deployment
   production: {
-    API_URL: 'https://phishguard-project.vercel.app/api/phishing/analyze',
-    HOST_PERMISSIONS: ['https://phishguard-project.vercel.app/*', 'https://*.vercel.app/*']
+    API_URL: 'https://phishguard-project.vercel.app/api/phishing/analyze'
   }
 };
 
 // Determine current environment
-// You can change this to 'production' when building for production
+// This value is automatically set during the build process
+// - 'development' for local testing (default)
+// - 'production' for production deployment
 const CURRENT_ENV = 'development';
 
 // Export the configuration for current environment

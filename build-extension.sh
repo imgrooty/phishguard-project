@@ -1,6 +1,8 @@
 #!/bin/bash
 # Build script for PhishGuard Extension
 # Generates both development and production versions
+# 
+# Supported platforms: Linux, macOS, Windows (Git Bash/WSL)
 
 set -e
 
@@ -29,11 +31,12 @@ build_extension() {
   cp -r "$SCRIPT_DIR/extension/"* "$TEMP_DIR/"
   
   # Update config.js for the target environment
+  # Cross-platform sed handling
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
+    # macOS requires -i '' for in-place editing
     sed -i '' "s/const CURRENT_ENV = '.*';/const CURRENT_ENV = '$env';/" "$TEMP_DIR/config.js"
   else
-    # Linux
+    # Linux, Git Bash, WSL
     sed -i "s/const CURRENT_ENV = '.*';/const CURRENT_ENV = '$env';/" "$TEMP_DIR/config.js"
   fi
   

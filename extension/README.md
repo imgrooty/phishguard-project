@@ -99,10 +99,16 @@ If your production deployment is at a different URL, update the `production.API_
 
 ```javascript
 production: {
-  API_URL: 'https://your-domain.com/api/phishing/analyze',
-  HOST_PERMISSIONS: ['https://your-domain.com/*']
+  API_URL: 'https://your-domain.com/api/phishing/analyze'
 }
 ```
+
+Then rebuild the extension:
+```bash
+npm run build-extension
+```
+
+**Note:** You'll also need to update the `host_permissions` in `extension/manifest.json` to include your custom domain.
 
 ## Troubleshooting
 
