@@ -7,8 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "_comment": "package-extension: Unix/Mac only. Windows users need Git Bash, WSL, or a zip tool",
-    "package-extension": "cd extension && zip -r ../public/phishguard-extension.zip . -x '*.git*'"
+    "_comment": "Extension build scripts - Use build-extension for production-ready packages",
+    "build-extension": "./build-extension.sh"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.33.1",
