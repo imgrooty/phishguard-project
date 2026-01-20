@@ -277,6 +277,10 @@ export class EmailService {
     const apiKey = config.PHISHING_API_KEY;
     const hfToken = config.HF_API_TOKEN;
 
+    console.log("🔍 ML Analysis - API URL:", apiUrl);
+    console.log("🔍 ML Analysis - API Key configured:", !!apiKey);
+    console.log("🔍 ML Analysis - HF Token configured:", !!hfToken);
+
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -296,12 +300,14 @@ export class EmailService {
         use_threshold: true,
       };
 
+      console.log("🚀 Calling ML API at:", apiUrl);
       const response = await fetch(apiUrl, {
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(config.ML_TIMEOUT || config.REQUEST_TIMEOUT)
       });
+      console.log("✅ ML API response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
