@@ -25,7 +25,8 @@ export const config = {
   
   // Performance settings
   EMAIL_BATCH_SIZE: 3,
-  REQUEST_TIMEOUT: 15000,
+  REQUEST_TIMEOUT: 8000,
+  ML_TIMEOUT: 5000,
   TOKEN_REFRESH_TIMEOUT: 10000,
   
   // Phishing detection thresholds
