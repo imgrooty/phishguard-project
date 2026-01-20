@@ -7,6 +7,7 @@ export const config = {
   
   // API Keys
   PHISHING_API_KEY: process.env.PHISHING_API_KEY || "",
+  HF_API_TOKEN: process.env.HF_API_TOKEN || "",
   VIRUSTOTAL_API_KEY: process.env.VIRUSTOTAL_API_KEY || "",
   GOOGLE_SAFE_BROWSING_API_KEY: process.env.GOOGLE_SAFE_BROWSING_API_KEY || "",
   

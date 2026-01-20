@@ -78,6 +78,7 @@ AZURE_AD_CLIENT_SECRET=your-azure-client-secret
 # Phishing Detection APIs
 PHISHING_API_URL=http://127.0.0.1:8000/predict
 PHISHING_API_KEY=your-ml-api-key
+HF_API_TOKEN=hf_your_token_here  # Hugging Face API token (format: hf_xxxxx)
 
 # VirusTotal API (optional but recommended)
 VIRUSTOTAL_API_KEY=your-virustotal-api-key
