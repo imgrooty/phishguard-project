@@ -1,12 +1,13 @@
 // Configuration constants and environment variables
 export const config = {
   // API URLs
-  PHISHING_API_URL: process.env.PHISHING_API_URL || "http://127.0.0.1:8000/predict",
+  PHISHING_API_URL: process.env.PHISHING_API_URL || "https://imgrooty-phishguardapi.hf.space/predict",
   VIRUSTOTAL_API_URL: "https://www.virustotal.com/api/v3",
   GOOGLE_SAFE_BROWSING_API_URL: "https://safebrowsing.googleapis.com/v4/threatMatches:find",
   
   // API Keys
   PHISHING_API_KEY: process.env.PHISHING_API_KEY || "",
+  HF_API_TOKEN: process.env.HF_API_TOKEN || "",
   VIRUSTOTAL_API_KEY: process.env.VIRUSTOTAL_API_KEY || "",
   GOOGLE_SAFE_BROWSING_API_KEY: process.env.GOOGLE_SAFE_BROWSING_API_KEY || "",
   
@@ -49,7 +50,8 @@ export function validateConfig() {
   const optional = [
     'GOOGLE_SAFE_BROWSING_API_KEY',
     'VIRUSTOTAL_API_KEY',
-    'PHISHING_API_KEY'
+    'PHISHING_API_KEY',
+    'HF_API_TOKEN'
   ];
   
   const missing = required.filter(key => !process.env[key]);

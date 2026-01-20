@@ -76,8 +76,9 @@ AZURE_AD_CLIENT_ID=your-azure-client-id
 AZURE_AD_CLIENT_SECRET=your-azure-client-secret
 
 # Phishing Detection APIs
-PHISHING_API_URL=http://127.0.0.1:8000/predict
+PHISHING_API_URL=https://imgrooty-phishguardapi.hf.space/predict
 PHISHING_API_KEY=your-ml-api-key
+HF_API_TOKEN=your-huggingface-token
 
 # VirusTotal API (optional but recommended)
 VIRUSTOTAL_API_KEY=your-virustotal-api-key
