@@ -170,6 +170,33 @@ The application is compatible with any Node.js hosting platform:
 - HTTPS is enforced for all external API calls
 - Rate limiting prevents API abuse
 
+## 🔌 Browser Extension
+
+PhishGuard includes a browser extension for quick phishing detection directly from your browser.
+
+### Building the Extension
+
+Build the extension for your target environment:
+
+```bash
+# For development (connects to localhost:3000)
+npm run build-extension-dev
+
+# For production (connects to production deployment)
+npm run build-extension-prod
+
+# Build both versions
+npm run build-extension
+```
+
+### Installation
+
+1. Download the appropriate extension zip file from `public/` directory
+2. Extract the zip file
+3. Load the extension in your browser (see `extension/README.md` for detailed instructions)
+
+For full extension documentation, see [extension/README.md](extension/README.md).
+
 ## 📊 Monitoring and Analytics
 
 The system includes comprehensive logging for:

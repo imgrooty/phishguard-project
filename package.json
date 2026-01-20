@@ -7,8 +7,10 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "_comment": "package-extension: Unix/Mac only. Windows users need Git Bash, WSL, or a zip tool",
-    "package-extension": "cd extension && zip -r ../public/phishguard-extension.zip . -x '*.git*'"
+    "_comment": "Extension build scripts",
+    "build-extension": "./build-extension.sh",
+    "build-extension-dev": "cd extension && sed -i.bak \"s/const CURRENT_ENV = '.*';/const CURRENT_ENV = 'development';/\" config.js && zip -r ../public/phishguard-extension-dev.zip . -x '*.git*' -x 'README.md' -x '*.bak' && rm -f config.js.bak",
+    "build-extension-prod": "cd extension && sed -i.bak \"s/const CURRENT_ENV = '.*';/const CURRENT_ENV = 'production';/\" config.js && zip -r ../public/phishguard-extension-prod.zip . -x '*.git*' -x 'README.md' -x '*.bak' && rm -f config.js.bak"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.33.1",

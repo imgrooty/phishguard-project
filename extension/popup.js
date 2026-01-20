@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api/phishing/analyze';
+const API_URL = window.PHISHGUARD_CONFIG.API_URL;
 
 document.addEventListener('DOMContentLoaded', () => {
   const analyzeTabBtn = document.getElementById('analyze-tab-btn');
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       riskLabel.textContent = 'Error';
       riskLabel.style.color = '#ef4444';
-      reasonsList.textContent = 'Could not connect to PhishGuard. Make sure the web app is running at http://localhost:3000';
+      reasonsList.textContent = 'Could not connect to PhishGuard. Make sure the web app is running and accessible.';
       console.error(error);
     }
   };

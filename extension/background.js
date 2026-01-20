@@ -1,4 +1,7 @@
-const API_URL = 'http://localhost:3000/api/phishing/analyze';
+// Import configuration
+importScripts('config.js');
+
+const API_URL = self.PHISHGUARD_CONFIG.API_URL;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({

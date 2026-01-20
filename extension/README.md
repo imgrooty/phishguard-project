@@ -63,20 +63,59 @@
 
 ## Requirements
 
-- **Local development only**: This extension is intended for use with a locally running PhishGuard instance during development or testing.
+### For Development
 - The PhishGuard web application must be running at `http://localhost:3000`
 - You must be logged in to the PhishGuard web app to use the extension features
-- **Important**: The API URL is currently hardcoded to `http://localhost:3000` in the extension code and is not configurable. To use this extension against a non-local or production deployment, you must modify the extension source to point to your deployment URL and rebuild the extension.
+
+### For Production
+- Use the production version of the extension (`phishguard-extension-prod.zip`)
+- The extension will connect to `https://phishguard-project.vercel.app`
+- You must be logged in to the PhishGuard production web app to use the extension features
+
+## Building the Extension
+
+The extension comes in two versions:
+
+1. **Development Version** - Connects to `http://localhost:3000`
+   ```bash
+   npm run build-extension-dev
+   ```
+   This generates `public/phishguard-extension-dev.zip`
+
+2. **Production Version** - Connects to the production deployment
+   ```bash
+   npm run build-extension-prod
+   ```
+   This generates `public/phishguard-extension-prod.zip`
+
+To build both versions at once:
+```bash
+npm run build-extension
+```
+
+### Customizing the Production URL
+
+If your production deployment is at a different URL, update the `production.API_URL` in `extension/config.js` before building:
+
+```javascript
+production: {
+  API_URL: 'https://your-domain.com/api/phishing/analyze',
+  HOST_PERMISSIONS: ['https://your-domain.com/*']
+}
+```
 
 ## Troubleshooting
 
 **"Please log in to PhishGuard web app"**
-- Make sure you're logged in at `http://localhost:3000`
+- Make sure you're logged in to the PhishGuard web application
 - The extension uses cookies for authentication
+- For development: log in at `http://localhost:3000`
+- For production: log in at your production URL
 
 **"Could not connect to PhishGuard"**
-- Ensure the web application is running
-- Check that it's accessible at `http://localhost:3000`
+- Development version: Ensure the web application is running at `http://localhost:3000`
+- Production version: Ensure you're using the production build and the production site is accessible
+- Check your internet connection
 
 **Extension not working**
 - Try refreshing the page
