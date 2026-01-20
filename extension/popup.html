@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PhishGuard</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="icons/icon48.png" alt="PhishGuard Logo" class="logo">
+      <h1>PhishGuard</h1>
+    </header>
+
+    <main>
+      <div id="auth-warning" class="warning hidden">
+        Please log in to PhishGuard web app to use this extension.
+      </div>
+
+      <section class="action-section">
+        <button id="analyze-tab-btn" class="primary-btn">Analyze Current Page</button>
+      </section>
+
+      <div class="separator">OR</div>
+
+      <section class="manual-section">
+        <textarea id="manual-text" placeholder="Paste suspicious text or email content here..."></textarea>
+        <button id="analyze-text-btn" class="secondary-btn">Analyze Text</button>
+      </section>
+
+      <section id="results" class="results-section hidden">
+        <div class="risk-indicator">
+          <span id="risk-label">Analyzing...</span>
+          <div class="score-bar">
+            <div id="score-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div id="reasons-list" class="reasons"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>&copy; 2024 PhishGuard</p>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

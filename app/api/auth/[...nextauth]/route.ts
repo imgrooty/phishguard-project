@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
 
-export const handler = NextAuth({
+export const authOptions = {
   providers: [
     // OAuth authentication providers...
     GoogleProvider({
@@ -36,7 +36,9 @@ export const handler = NextAuth({
       },
     }),
   ],
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt' as const },
   secret: process.env.NEXTAUTH_SECRET!,
-});
+};
+
+export const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
