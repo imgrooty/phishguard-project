@@ -284,8 +284,10 @@ export class EmailService {
 
       if (hfToken) {
         headers["Authorization"] = `Bearer ${hfToken}`;
-      } else if (apiKey) {
-        headers["x_api_key"] = apiKey;
+      }
+
+      if (apiKey) {
+        headers["x-api-key"] = apiKey;
       }
 
       const requestBody = {
