@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import Link from "next/link";
 import { Download, Chrome, Info } from "lucide-react";
 
 export default function DownloadExtension() {
@@ -56,6 +55,8 @@ export default function DownloadExtension() {
             <p className="text-white/80 mb-6">Step-by-step instructions</p>
             <button
               onClick={() => setShowInstructions(!showInstructions)}
+              aria-expanded={showInstructions}
+              aria-label={showInstructions ? "Hide installation instructions" : "Show installation instructions"}
               className="inline-flex items-center gap-2 bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
             >
               <Info className="w-5 h-5" />
@@ -81,7 +82,7 @@ export default function DownloadExtension() {
                     </ul>
                   </li>
                   <li>Enable "Developer mode" (toggle in top-right corner)</li>
-                  <li>Click "Load unpacked" and select the extracted extension folder</li>
+                  <li>Click "Load unpacked" and select the extracted extension <strong>folder</strong></li>
                   <li>The PhishGuard extension is now installed!</li>
                 </ol>
               </div>
@@ -92,7 +93,7 @@ export default function DownloadExtension() {
                   <li>Download and extract the extension ZIP file</li>
                   <li>Navigate to <code className="bg-white/20 px-2 py-1 rounded">about:debugging#/runtime/this-firefox</code></li>
                   <li>Click "Load Temporary Add-on"</li>
-                  <li>Select the manifest.json file from the extracted folder</li>
+                  <li>Select the <strong>manifest.json file</strong> from the extracted folder</li>
                   <li>The extension is now loaded (temporary installation)</li>
                 </ol>
               </div>
@@ -100,6 +101,7 @@ export default function DownloadExtension() {
               <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4">
                 <p className="text-white font-semibold mb-2">⚠️ Important:</p>
                 <ul className="text-white/90 space-y-1 list-disc list-inside">
+                  <li><strong>Local development only:</strong> This extension works with localhost only</li>
                   <li>The PhishGuard web app must be running at <code className="bg-white/20 px-2 py-1 rounded">http://localhost:3000</code></li>
                   <li>You must be logged in to use the extension features</li>
                   <li>Full README with troubleshooting is included in the download</li>

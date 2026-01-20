@@ -19,7 +19,7 @@
 
 4. **Load Unpacked Extension**
    - Click "Load unpacked" button
-   - Select the extracted extension folder
+   - Select the extracted extension **folder** (not individual files)
    - The PhishGuard extension should now appear in your extensions list
 
 5. **Pin the Extension** (Optional)
@@ -34,9 +34,9 @@
 2. **Temporary Installation (For Testing)**
    - Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
    - Click "Load Temporary Add-on"
-   - Select the `manifest.json` file from the extracted extension folder
+   - Select the `manifest.json` **file** (not the folder) from the extracted extension folder
    
-   > Note: For permanent installation in Firefox, the extension needs to be signed by Mozilla or installed from the Firefox Add-ons store.
+   > Note: Unlike Chrome-based browsers which require selecting the folder, Firefox requires selecting the manifest.json file specifically. For permanent installation in Firefox, the extension needs to be signed by Mozilla or installed from the Firefox Add-ons store.
 
 ## Features
 
@@ -63,8 +63,10 @@
 
 ## Requirements
 
+- **Local development only**: This extension is intended for use with a locally running PhishGuard instance during development or testing.
 - The PhishGuard web application must be running at `http://localhost:3000`
 - You must be logged in to the PhishGuard web app to use the extension features
+- **Important**: The API URL is currently hardcoded to `http://localhost:3000` in the extension code and is not configurable. To use this extension against a non-local or production deployment, you must modify the extension source to point to your deployment URL and rebuild the extension.
 
 ## Troubleshooting
 
