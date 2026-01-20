@@ -4,6 +4,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import { EmailService } from "@/lib/emailService";
+import { config } from "@/lib/config";
 
 export async function GET(req: Request) {
   try {
@@ -82,20 +83,29 @@ export async function GET(req: Request) {
 
         if (listResponse.ok) {
           const listData = await listResponse.json();
-          const messages = listData.messages || [];
+          const messages = (listData.messages || []).filter(
+            (msg: any) => !user.emails.some((e: any) => e.messageId === msg.id)
+          );
 
-          for (const msg of messages) {
-            if (user.emails.some((e: any) => e.messageId === msg.id)) continue;
+          // Fetch messages in parallel
+          const msgDetails = await Promise.all(
+            messages.map(async (msg: any) => {
+              try {
+                const msgResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
+                  headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                if (msgResponse.ok) {
+                  const msgData = await msgResponse.json();
+                  return parseGmailMessage(msgData);
+                }
+              } catch (err) {
+                console.error(`Error fetching Gmail msg ${msg.id}:`, err);
+              }
+              return null;
+            })
+          );
 
-            const msgResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            });
-
-            if (msgResponse.ok) {
-              const msgData = await msgResponse.json();
-              fetchedEmails.push(parseGmailMessage(msgData));
-            }
-          }
+          fetchedEmails.push(...msgDetails.filter(msg => msg !== null));
         }
       } else if (user.provider === "azure-ad" || user.provider === "microsoft") {
         let url = `https://graph.microsoft.com/v1.0/me/messages?$top=${limit}&$select=id,subject,from,toRecipients,receivedDateTime,body,isRead`;
@@ -121,43 +131,57 @@ export async function GET(req: Request) {
       console.error("⚠️ Error fetching from provider API:", fetchError);
     }
 
-    // Analyze new emails
+    // Analyze new emails in parallel with concurrency limit (using batches)
     const analyzedEmails = [];
-    for (const email of fetchedEmails) {
-      try {
-        const linkRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi;
-        const links = email.body.match(linkRegex) || [];
+    const batchSize = config.EMAIL_BATCH_SIZE || 3;
 
-        const analysis = await emailService.analyzePhishing({
-          from: email.from,
-          subject: email.subject,
-          body: email.body,
-          links
-        });
+    for (let i = 0; i < fetchedEmails.length; i += batchSize) {
+      const batch = fetchedEmails.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (email) => {
+          try {
+            const linkRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi;
+            const links = email.body.match(linkRegex) || [];
 
-        analyzedEmails.push({
-          ...email,
-          isPotentialPhishing: analysis.isPotentialPhishing,
-          phishingScore: analysis.phishingScore,
-          phishingReasons: analysis.phishingReasons,
-          prediction: analysis.mlPrediction,
-          confidence: analysis.confidence,
-          model_used: analysis.modelUsed,
-          virusTotalResult: analysis.virusTotalResult,
-          googleSafeBrowsingResult: analysis.googleSafeBrowsingResult,
-          heuristicScore: analysis.heuristicScore,
-          mlScore: analysis.mlScore
-        });
-      } catch (analysisError) {
-        console.error(`⚠️ Error analyzing email ${email.messageId}:`, analysisError);
-        analyzedEmails.push(email);
-      }
+            const analysis = await emailService.analyzePhishing({
+              from: email.from,
+              subject: email.subject,
+              body: email.body,
+              links
+            });
+
+            return {
+              ...email,
+              isPotentialPhishing: analysis.isPotentialPhishing,
+              phishingScore: analysis.phishingScore,
+              phishingReasons: analysis.phishingReasons,
+              prediction: analysis.mlPrediction,
+              confidence: analysis.confidence,
+              model_used: analysis.modelUsed,
+              virusTotalResult: analysis.virusTotalResult,
+              googleSafeBrowsingResult: analysis.googleSafeBrowsingResult,
+              heuristicScore: analysis.heuristicScore,
+              mlScore: analysis.mlScore
+            };
+          } catch (analysisError) {
+            console.error(`⚠️ Error analyzing email ${email.messageId}:`, analysisError);
+            return email; // Fallback to unanalyzed email
+          }
+        })
+      );
+      analyzedEmails.push(...batchResults);
     }
 
     // Persistence
     if (analyzedEmails.length > 0) {
       // Add new emails to the beginning of the array
       user.emails.unshift(...analyzedEmails);
+
+      // Limit to latest 100 emails to prevent document size issues
+      if (user.emails.length > 100) {
+        user.emails = user.emails.slice(0, 100);
+      }
+
       user.lastEmailSync = new Date();
       await user.save();
       console.log(`💾 Saved ${analyzedEmails.length} new analyzed emails for ${user.email}`);

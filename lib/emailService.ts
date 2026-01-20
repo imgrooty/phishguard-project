@@ -294,7 +294,7 @@ export class EmailService {
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(config.REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(config.ML_TIMEOUT || config.REQUEST_TIMEOUT)
       });
 
       if (!response.ok) {
