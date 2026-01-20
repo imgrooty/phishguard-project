@@ -275,13 +275,19 @@ export class EmailService {
   private async performMLAnalysis(text: string): Promise<any> {
     const apiUrl = config.PHISHING_API_URL;
     const apiKey = config.PHISHING_API_KEY;
+    const hfToken = config.HF_API_TOKEN;
 
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
+      
+      if (hfToken) {
+        headers["Authorization"] = `Bearer ${hfToken}`;
+      }
+      
       if (apiKey) {
-        headers["x_api_key"] = apiKey;
+        headers["x-api-key"] = apiKey;
       }
 
       const requestBody = {
