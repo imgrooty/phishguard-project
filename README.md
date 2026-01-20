@@ -1,10 +1,10 @@
 # PhishGuard - Advanced Email Security Platform
 
-<<<<<<< HEAD
+
 ## Getting Started.
-=======
+
 A comprehensive email phishing detection system that combines multiple analysis methods to provide accurate threat detection and user protection.
->>>>>>> 94b66900742252551c618d17a6bedf5d5364d3f4
+
 
 ## 🚀 Features
 
