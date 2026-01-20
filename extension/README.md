@@ -68,7 +68,7 @@
 - You must be logged in to the PhishGuard web app to use the extension features
 
 ### For Production
-- Use the production version of the extension (`phishguard-extension-prod.zip`)
+- Use the production version of the extension (`phishguard-extension-production.zip`)
 - The extension will connect to `https://phishguard-project.vercel.app`
 - You must be logged in to the PhishGuard production web app to use the extension features
 
@@ -78,17 +78,17 @@ The extension comes in two versions:
 
 1. **Development Version** - Connects to `http://localhost:3000`
    ```bash
-   npm run build-extension-dev
+   npm run build-extension
    ```
-   This generates `public/phishguard-extension-dev.zip`
+   This generates `public/phishguard-extension-development.zip`
 
 2. **Production Version** - Connects to the production deployment
    ```bash
-   npm run build-extension-prod
+   npm run build-extension
    ```
-   This generates `public/phishguard-extension-prod.zip`
+   This generates `public/phishguard-extension-production.zip`
 
-To build both versions at once:
+The build script creates both versions simultaneously:
 ```bash
 npm run build-extension
 ```

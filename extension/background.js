@@ -1,6 +1,12 @@
 // Import configuration
 importScripts('config.js');
 
+// Verify configuration is loaded correctly
+if (!self.PHISHGUARD_CONFIG || !self.PHISHGUARD_CONFIG.API_URL) {
+  console.error('PhishGuard configuration not loaded correctly');
+  throw new Error('PhishGuard configuration not loaded. Please reinstall the extension.');
+}
+
 const API_URL = self.PHISHGUARD_CONFIG.API_URL;
 
 chrome.runtime.onInstalled.addListener(() => {

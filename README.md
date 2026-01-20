@@ -179,15 +179,13 @@ PhishGuard includes a browser extension for quick phishing detection directly fr
 Build the extension for your target environment:
 
 ```bash
-# For development (connects to localhost:3000)
-npm run build-extension-dev
-
-# For production (connects to production deployment)
-npm run build-extension-prod
-
-# Build both versions
+# Build both development and production versions
 npm run build-extension
 ```
+
+This creates:
+- `public/phishguard-extension-development.zip` - For local testing
+- `public/phishguard-extension-production.zip` - For production use
 
 ### Installation
 

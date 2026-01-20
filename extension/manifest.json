@@ -10,8 +10,7 @@
   ],
   "host_permissions": [
     "http://localhost:3000/*",
-    "https://phishguard-project.vercel.app/*",
-    "https://*.vercel.app/*"
+    "https://phishguard-project.vercel.app/*"
   ],
   "action": {
     "default_popup": "popup.html",

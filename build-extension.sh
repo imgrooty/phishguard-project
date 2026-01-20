@@ -40,6 +40,13 @@ build_extension() {
     sed -i "s/const CURRENT_ENV = '.*';/const CURRENT_ENV = '$env';/" "$TEMP_DIR/config.js"
   fi
   
+  # Verify that CURRENT_ENV was updated correctly
+  if ! grep -q "const CURRENT_ENV = '$env';" "$TEMP_DIR/config.js"; then
+    echo "Error: Failed to set CURRENT_ENV to '$env' in $TEMP_DIR/config.js" >&2
+    rm -rf "$TEMP_DIR"
+    exit 1
+  fi
+  
   # Create zip file
   (cd "$TEMP_DIR" && zip -r "$output_file" . -x '*.git*' -x 'README.md')
   

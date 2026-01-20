@@ -1,3 +1,10 @@
+// Verify configuration is loaded correctly
+if (!window.PHISHGUARD_CONFIG || !window.PHISHGUARD_CONFIG.API_URL) {
+  console.error('PhishGuard configuration not loaded correctly');
+  alert('PhishGuard configuration error. Please reinstall the extension.');
+  throw new Error('PhishGuard configuration not loaded. Please reinstall the extension.');
+}
+
 const API_URL = window.PHISHGUARD_CONFIG.API_URL;
 
 document.addEventListener('DOMContentLoaded', () => {
