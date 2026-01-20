@@ -65,7 +65,7 @@ export async function GET(req: Request) {
       }
     }
 
-    let fetchedEmails: any[] = [];
+    const fetchedEmails: any[] = [];
     const limit = 10; // Fetch latest 10 emails
 
     try {
