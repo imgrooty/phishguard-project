@@ -445,6 +445,7 @@ function DashboardContent() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                       <input
                         type="text"
+                        aria-label="Search emails"
                         placeholder="Search by sender or subject..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -457,6 +458,7 @@ function DashboardContent() {
                         <BarChart3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                         <select
                           value={sortBy}
+                          aria-label="Sort by"
                           onChange={(e) => setSortBy(e.target.value as any)}
                           className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
                         >
@@ -468,6 +470,7 @@ function DashboardContent() {
                         <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                         <select
                           value={filter}
+                          aria-label="Filter emails"
                           onChange={(e) => setFilter(e.target.value as any)}
                           className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
                         >
@@ -517,7 +520,18 @@ function DashboardContent() {
                       ) : (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                           <Mail className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No messages found</p>
+                          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">No messages found</p>
+                          {(filter !== 'all' || searchQuery !== "") && (
+                            <button
+                              onClick={() => {
+                                setFilter('all');
+                                setSearchQuery('');
+                              }}
+                              className="text-sm text-blue-600 hover:text-blue-700 font-semibold underline underline-offset-4"
+                            >
+                              Clear all filters
+                            </button>
+                          )}
                         </motion.div>
                       )}
                     </div>
@@ -531,11 +545,20 @@ function DashboardContent() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0, scale: 0.98 }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedEmail(email);
+                                if (window.innerWidth < 1024) setShowEmailList(false);
+                              }
+                            }}
                             onClick={() => {
                               setSelectedEmail(email);
                               if (window.innerWidth < 1024) setShowEmailList(false);
                             }}
-                            className={`p-4 cursor-pointer transition-all relative group ${
+                            className={`p-4 cursor-pointer transition-all relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                               selectedEmail?.messageId === email.messageId
                                 ? "bg-white shadow-inner"
                                 : "hover:bg-white"
