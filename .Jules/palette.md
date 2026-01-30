@@ -1,3 +1,3 @@
-## 2025-05-14 - [Accessibility & Empty States]
-**Learning:** Interactive elements implemented as `div` or `motion.div` often miss keyboard accessibility (tabIndex, onKeyDown) and proper ARIA roles. Additionally, empty states without actionable "clear filters" buttons can frustrate users who get stuck with no results.
-**Action:** Always ensure custom interactive components have `role="button"` and `tabIndex={0}`. Provide a "Clear Filters" or similar escape hatch in empty states when active filters are present.
+## 2025-05-14 - Dashboard Accessibility and Micro-UX
+**Learning:** Common interactive elements like custom selects and icon-only buttons often lack ARIA labels, making them difficult for screen reader users. Adding a "Clear Search" button is a simple but highly effective micro-UX improvement for search-heavy interfaces.
+**Action:** Always check for `aria-label` on buttons and selects, and consider adding clear buttons to search inputs.
