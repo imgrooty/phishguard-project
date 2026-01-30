@@ -94,6 +94,7 @@ function SidebarContent() {
 
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="absolute -right-3.5 top-1/2 -translate-y-1/2 bg-white border border-gray-100 rounded-full p-1.5 shadow-md hover:bg-gray-50 transition-all hover:scale-110 active:scale-95"
         >
           {collapsed ? <ChevronRight className="w-3.5 h-3.5 text-gray-400" /> : <ChevronLeft className="w-3.5 h-3.5 text-gray-400" />}
