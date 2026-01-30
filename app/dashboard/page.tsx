@@ -533,7 +533,18 @@ function DashboardContent() {
                       ) : (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                           <Mail className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No messages found</p>
+                          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">No messages found</p>
+                          {(filter !== 'all' || searchQuery !== "") && (
+                            <button
+                              onClick={() => {
+                                setFilter('all');
+                                setSearchQuery('');
+                              }}
+                              className="text-sm text-blue-600 hover:text-blue-700 font-semibold underline underline-offset-4"
+                            >
+                              Clear all filters
+                            </button>
+                          )}
                         </motion.div>
                       )}
                     </div>
@@ -547,11 +558,20 @@ function DashboardContent() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0, scale: 0.98 }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedEmail(email);
+                                if (window.innerWidth < 1024) setShowEmailList(false);
+                              }
+                            }}
                             onClick={() => {
                               setSelectedEmail(email);
                               if (window.innerWidth < 1024) setShowEmailList(false);
                             }}
-                            className={`p-4 cursor-pointer transition-all relative group ${
+                            className={`p-4 cursor-pointer transition-all relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                               selectedEmail?.messageId === email.messageId
                                 ? "bg-white shadow-inner"
                                 : "hover:bg-white"
