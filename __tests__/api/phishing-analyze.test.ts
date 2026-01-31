@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 // Mock next-auth
 jest.mock('next-auth', () => ({
@@ -225,7 +225,7 @@ describe('Phishing Analysis API', () => {
         }),
       } as unknown as NextRequest;
 
-      const response = await POST(mockRequest);
+      await POST(mockRequest);
 
       expect(mockEmailService.analyzePhishing).toHaveBeenCalledWith({
         from: 'External Source',

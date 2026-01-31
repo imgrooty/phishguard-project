@@ -214,16 +214,16 @@ npm run test:coverage
 
 ### Test Coverage
 
-The test suite includes **64 comprehensive tests** covering:
+The test suite includes **63 comprehensive tests** covering:
 - ✅ Authentication and JWT token management
 - ✅ Email phishing detection (heuristic + ML)
 - ✅ OAuth token refresh (Google & Microsoft)
 - ✅ Configuration validation
 - ✅ API endpoints
-- ✅ Data models
+- ✅ Data model schema structure
 
 **Test Statistics**:
-- Total Tests: 64
+- Total Tests: 63
 - Pass Rate: 100%
 - Test Suites: 6
 - Coverage: 75%+ for core modules

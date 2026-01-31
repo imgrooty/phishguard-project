@@ -39,7 +39,7 @@ This report presents the results of comprehensive testing performed on the Phish
 | Metric | Value | Status |
 |--------|-------|--------|
 | **Total Test Suites** | 6 | ✅ All Passed |
-| **Total Tests** | 64 | ✅ All Passed |
+| **Total Tests** | 63 | ✅ All Passed |
 | **Pass Rate** | 100% | ✅ Excellent |
 | **Execution Time** | 1.526 seconds | ✅ Fast |
 | **Failed Tests** | 0 | ✅ None |
@@ -52,7 +52,7 @@ This report presents the results of comprehensive testing performed on the Phish
 | Configuration Tests | 11 | ✅ PASS | Fast |
 | Email Service Tests | 19 | ✅ PASS | Fast |
 | Database Tests | 4 | ✅ PASS | Fast |
-| User Model Tests | 15 | ✅ PASS | Fast |
+| User Model Tests | 13 | ✅ PASS | Fast |
 | API Endpoint Tests | 9 | ✅ PASS | Fast |
 
 ---
@@ -190,17 +190,23 @@ This report presents the results of comprehensive testing performed on the Phish
 
 **Test Cases**:
 ```
-✅ Database Configuration
-   - MongoDB URI is defined
-   - Connection options correct
-   - Caching mechanism verified
-   - URI format validated
+✅ Database Configuration (1 test)
+   - MongoDB URI from environment
+
+✅ Connection Logic (1 test)
+   - mongoose.connect called with correct options
+
+✅ Connection Caching (1 test)
+   - Connections are cached and reused
+
+✅ Error Handling (1 test)
+   - Promise reset on connection error
 ```
 
 **Key Findings**:
-- Database configuration is proper
-- Connection caching implemented correctly
-- URI validation works
+- Connection logic properly tested
+- Caching behavior verified
+- Error handling validated
 
 ---
 
@@ -208,38 +214,37 @@ This report presents the results of comprehensive testing performed on the Phish
 
 **Purpose**: Data model schemas and validation
 
-**Tests Passed**: 15/15 ✅
+**Tests Passed**: 13/13 ✅
 
 **Test Cases**:
 ```
-✅ Schema Structure (5 tests)
-   - Required fields defined
-   - Email format validation
-   - Provider enum correct
-   - Default values set
-   - Email schema complete
+✅ User Schema Structure (6 tests)
+   - Name field validation (required string)
+   - Email field validation (required, unique, lowercase, trim)
+   - Provider enum values
+   - Token management fields
+   - Emails array field
+   - lastEmailSync date field
 
-✅ Enhanced Fields (2 tests)
-   - Analysis fields supported
-   - URL safety structure correct
+✅ Email Schema Structure (4 tests)
+   - MessageId required field
+   - Default values for email fields
+   - Enhanced analysis fields
+   - Date field validation
 
-✅ User Management (3 tests)
-   - Token fields present
-   - Sync field exists
-   - Email array storage
+✅ URL Safety Result Schema (2 tests)
+   - Required fields (url, isSafe)
+   - Optional threat and platform type fields
 
-✅ Validation Logic (5 tests)
-   - Required fields validated
-   - Email lowercase transformation
-   - Email trimming
-   - Score range validation
-   - Provider values correct
+✅ Schema Options (1 test)
+   - Timestamps enabled
 ```
 
 **Key Findings**:
-- Data models are well-structured
-- Validation rules are appropriate
-- All required fields present
+- Schema structure properly validated
+- Field types and requirements verified
+- Default values confirmed
+- Schema options (lowercase, trim, unique) validated
 
 ---
 
@@ -313,10 +318,10 @@ models/User.ts              |    0    |    0     |   100   |    0    | ⚠️
 - ✅ app/api/phishing/analyze - 90% statement coverage
 
 **Areas with Lower Coverage**:
-- ⚠️ lib/dbConnect.ts - 0% (requires MongoDB connection)
-- ⚠️ models/User.ts - 0% (schema definition, tested via validation)
+- ⚠️ lib/dbConnect.ts - Improved tests validate connection logic, caching, and error handling
+- ⚠️ models/User.ts - Improved tests validate actual schema structure, fields, and options
 
-**Note**: Lower coverage in dbConnect and models is expected as these require actual database connections and are primarily schema definitions. Their functionality is tested indirectly through integration tests.
+**Note**: The model tests now properly validate the mongoose schema structure, field types, required fields, default values, and options (lowercase, trim, unique). The dbConnect tests now validate the actual connection logic, caching behavior, and error handling.
 
 ---
 

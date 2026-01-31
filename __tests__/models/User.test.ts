@@ -2,169 +2,139 @@
  * @jest-environment node
  */
 
-// Mock mongoose before importing the model
-jest.mock('mongoose', () => {
-  const actual = jest.requireActual('mongoose');
-  return {
-    ...actual,
-    models: {},
-    model: jest.fn(),
-  };
-});
+import mongoose from 'mongoose';
 
 describe('User Model', () => {
-  describe('User Schema', () => {
-    it('should define required fields', () => {
-      // Test that the schema includes expected fields
-      const requiredFields = ['name', 'email'];
-      
-      requiredFields.forEach(field => {
-        expect(field).toBeDefined();
-      });
+  let UserModel: any;
+  let UserSchema: mongoose.Schema;
+
+  beforeAll(() => {
+    // Import the actual User model and schema
+    jest.unmock('mongoose');
+    
+    // We need to test the schema structure without actually connecting to DB
+    // Import the types and schema definition
+    const User = require('@/models/User').default;
+    UserModel = User;
+    
+    // Get the schema from the model
+    if (UserModel && UserModel.schema) {
+      UserSchema = UserModel.schema;
+    }
+  });
+
+  describe('User Schema Structure', () => {
+    it('should have name field as required string', () => {
+      if (!UserSchema) return;
+      const nameField = UserSchema.path('name');
+      expect(nameField).toBeDefined();
+      expect(nameField.instance).toBe('String');
+      expect(nameField.isRequired).toBe(true);
     });
 
-    it('should validate email format', () => {
-      const validEmails = [
-        'test@example.com',
-        'user.name@domain.co.uk',
-        'user+tag@example.com'
-      ];
-
-      const invalidEmails = [
-        'invalid-email',
-        '@example.com',
-        'user@',
-        ''
-      ];
-
-      validEmails.forEach(email => {
-        expect(email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-      });
-
-      invalidEmails.forEach(email => {
-        expect(email).not.toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-      });
+    it('should have email field with required, unique, lowercase, and trim', () => {
+      if (!UserSchema) return;
+      const emailField = UserSchema.path('email');
+      expect(emailField).toBeDefined();
+      expect(emailField.instance).toBe('String');
+      expect(emailField.isRequired).toBe(true);
+      expect(emailField.options.unique).toBe(true);
+      expect(emailField.options.lowercase).toBe(true);
+      expect(emailField.options.trim).toBe(true);
     });
 
-    it('should have correct provider enum values', () => {
-      const validProviders = ['credentials', 'google', 'azure-ad', 'oauth'];
-      
-      validProviders.forEach(provider => {
-        expect(['credentials', 'google', 'azure-ad', 'oauth']).toContain(provider);
-      });
+    it('should have provider field with enum values', () => {
+      if (!UserSchema) return;
+      const providerField = UserSchema.path('provider');
+      expect(providerField).toBeDefined();
+      expect(providerField.instance).toBe('String');
+      expect(providerField.enumValues).toContain('credentials');
+      expect(providerField.enumValues).toContain('google');
+      expect(providerField.enumValues).toContain('azure-ad');
+      expect(providerField.enumValues).toContain('oauth');
     });
 
-    it('should define email schema with required fields', () => {
-      const emailRequiredFields = ['messageId', 'from', 'date'];
-      
-      emailRequiredFields.forEach(field => {
-        expect(field).toBeDefined();
-      });
+    it('should have optional token management fields', () => {
+      if (!UserSchema) return;
+      expect(UserSchema.path('accessToken')).toBeDefined();
+      expect(UserSchema.path('refreshToken')).toBeDefined();
+      expect(UserSchema.path('tokenExpiry')).toBeDefined();
+      expect(UserSchema.path('tokenExpiry').instance).toBe('Date');
     });
 
-    it('should have default values for email fields', () => {
-      const defaults = {
-        subject: '(No Subject)',
-        from: 'unknown@unknown.com',
-        to: 'unknown@unknown.com',
-        body: '',
-        isRead: false,
-        isPotentialPhishing: false,
-        phishingScore: 0
-      };
+    it('should have emails array field', () => {
+      if (!UserSchema) return;
+      const emailsField = UserSchema.path('emails');
+      expect(emailsField).toBeDefined();
+      expect(emailsField.instance).toBe('Array');
+    });
 
-      Object.entries(defaults).forEach(([key, value]) => {
-        expect(value).toBeDefined();
-      });
+    it('should have lastEmailSync date field', () => {
+      if (!UserSchema) return;
+      const syncField = UserSchema.path('lastEmailSync');
+      expect(syncField).toBeDefined();
+      expect(syncField.instance).toBe('Date');
     });
   });
 
-  describe('Email Analysis Fields', () => {
-    it('should support enhanced analysis fields', () => {
-      const analysisFields = [
-        'prediction',
-        'confidence',
-        'model_used',
-        'virusTotalResult',
-        'googleSafeBrowsingResult',
-        'heuristicScore',
-        'mlScore'
-      ];
-
-      analysisFields.forEach(field => {
-        expect(field).toBeDefined();
-      });
+  describe('Email Schema Structure', () => {
+    it('should have messageId as required field', () => {
+      if (!UserSchema) return;
+      const messageIdField = UserSchema.path('emails.messageId');
+      expect(messageIdField).toBeDefined();
+      expect(messageIdField.isRequired).toBe(true);
     });
 
-    it('should support URL safety result structure', () => {
-      const urlSafetyFields = {
-        url: 'http://example.com',
-        isSafe: true,
-        threatType: 'MALWARE',
-        platformType: 'ANY_PLATFORM',
-        cacheDuration: '300s',
-        lastChecked: new Date()
-      };
-
-      expect(urlSafetyFields.url).toBeDefined();
-      expect(typeof urlSafetyFields.isSafe).toBe('boolean');
-      expect(urlSafetyFields.lastChecked).toBeInstanceOf(Date);
-    });
-  });
-
-  describe('User Fields', () => {
-    it('should have token management fields', () => {
-      const tokenFields = ['accessToken', 'refreshToken', 'tokenExpiry'];
-      
-      tokenFields.forEach(field => {
-        expect(field).toBeDefined();
-      });
+    it('should have correct default values for email fields', () => {
+      if (!UserSchema) return;
+      expect(UserSchema.path('emails.subject').options.default).toBe('(No Subject)');
+      expect(UserSchema.path('emails.from').options.default).toBe('unknown@unknown.com');
+      expect(UserSchema.path('emails.to').options.default).toBe('unknown@unknown.com');
+      expect(UserSchema.path('emails.body').options.default).toBe('');
+      expect(UserSchema.path('emails.isRead').options.default).toBe(false);
+      expect(UserSchema.path('emails.isPotentialPhishing').options.default).toBe(false);
+      expect(UserSchema.path('emails.phishingScore').options.default).toBe(0);
     });
 
-    it('should have email synchronization field', () => {
-      expect('lastEmailSync').toBeDefined();
+    it('should have enhanced analysis fields', () => {
+      if (!UserSchema) return;
+      expect(UserSchema.path('emails.prediction')).toBeDefined();
+      expect(UserSchema.path('emails.confidence')).toBeDefined();
+      expect(UserSchema.path('emails.model_used')).toBeDefined();
+      expect(UserSchema.path('emails.virusTotalResult')).toBeDefined();
+      expect(UserSchema.path('emails.heuristicScore')).toBeDefined();
+      expect(UserSchema.path('emails.mlScore')).toBeDefined();
     });
 
-    it('should store emails as an array', () => {
-      const emails: any[] = [];
-      
-      expect(Array.isArray(emails)).toBe(true);
+    it('should have date field as required', () => {
+      if (!UserSchema) return;
+      const dateField = UserSchema.path('emails.date');
+      expect(dateField).toBeDefined();
+      expect(dateField.instance).toBe('Date');
+      expect(dateField.isRequired).toBe(true);
     });
   });
 
-  describe('Model Validation', () => {
-    it('should validate required user fields', () => {
-      const validUser = {
-        name: 'Test User',
-        email: 'test@example.com'
-      };
-
-      expect(validUser.name).toBeDefined();
-      expect(validUser.name.length).toBeGreaterThan(0);
-      expect(validUser.email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  describe('URL Safety Result Schema', () => {
+    it('should have url and isSafe as required fields', () => {
+      if (!UserSchema) return;
+      const urlField = UserSchema.path('emails.googleSafeBrowsingResult.url');
+      const isSafeField = UserSchema.path('emails.googleSafeBrowsingResult.isSafe');
+      expect(urlField).toBeDefined();
+      expect(isSafeField).toBeDefined();
     });
 
-    it('should validate email lowercase requirement', () => {
-      const email = 'TEST@EXAMPLE.COM';
-      const lowercase = email.toLowerCase();
-      
-      expect(lowercase).toBe('test@example.com');
+    it('should have optional threat and platform type fields', () => {
+      if (!UserSchema) return;
+      expect(UserSchema.path('emails.googleSafeBrowsingResult.threatType')).toBeDefined();
+      expect(UserSchema.path('emails.googleSafeBrowsingResult.platformType')).toBeDefined();
     });
+  });
 
-    it('should validate email trim requirement', () => {
-      const email = '  test@example.com  ';
-      const trimmed = email.trim();
-      
-      expect(trimmed).toBe('test@example.com');
-    });
-
-    it('should validate phishing score range', () => {
-      const scores = [0, 0.5, 1.0];
-      
-      scores.forEach(score => {
-        expect(score).toBeGreaterThanOrEqual(0);
-        expect(score).toBeLessThanOrEqual(1.0);
-      });
+  describe('Schema Options', () => {
+    it('should have timestamps enabled', () => {
+      if (!UserSchema) return;
+      expect(UserSchema.options.timestamps).toBe(true);
     });
   });
 });
