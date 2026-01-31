@@ -27,7 +27,7 @@ interface SidebarItemProps {
 
 const SidebarItem = ({ icon, label, href, active, collapsed }: SidebarItemProps) => {
   return (
-    <Link href={href}>
+    <Link href={href} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined}>
       <motion.div
         whileHover={{ x: 5 }}
         whileTap={{ scale: 0.95 }}
@@ -37,10 +37,15 @@ const SidebarItem = ({ icon, label, href, active, collapsed }: SidebarItemProps)
             : "text-gray-500 hover:bg-gray-50 hover:text-teal-600"
         }`}
       >
-        <div className={`flex-shrink-0 transition-colors ${active ? "text-white" : "group-hover:text-teal-600"}`}>
+        <div
+          className={`flex-shrink-0 transition-colors ${active ? "text-white" : "group-hover:text-teal-600"}`}
+          aria-hidden="true"
+        >
           {icon}
         </div>
-        {!collapsed && (
+        {collapsed ? (
+          <span className="sr-only">{label}</span>
+        ) : (
           <motion.span
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -80,14 +85,18 @@ function SidebarContent() {
             animate={{ opacity: 1 }}
             className="flex items-center gap-3 text-teal-600"
           >
-            <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
+            <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200" aria-hidden="true">
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-black tracking-tight text-gray-900">PhishGuard</span>
           </motion.div>
         )}
         {collapsed && (
-          <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 mx-auto">
+          <div
+            className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 mx-auto"
+            role="img"
+            aria-label="PhishGuard"
+          >
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
         )}
@@ -116,8 +125,10 @@ function SidebarContent() {
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all w-full group"
+          aria-label="Sign Out"
+          title={collapsed ? "Sign Out" : undefined}
         >
-          <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+          <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
           {!collapsed && <span className="font-bold text-sm">Sign Out</span>}
         </button>
       </div>
