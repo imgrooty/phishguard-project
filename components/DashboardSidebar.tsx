@@ -33,11 +33,11 @@ const SidebarItem = ({ icon, label, href, active, collapsed }: SidebarItemProps)
         whileTap={{ scale: 0.95 }}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 ${
           active
-            ? "bg-blue-600 text-white shadow-lg shadow-blue-200 ring-4 ring-blue-50"
-            : "text-gray-500 hover:bg-gray-50 hover:text-blue-600"
+            ? "bg-teal-600 text-white shadow-lg shadow-teal-200 ring-4 ring-teal-50"
+            : "text-gray-500 hover:bg-gray-50 hover:text-teal-600"
         }`}
       >
-        <div className={`flex-shrink-0 transition-colors ${active ? "text-white" : "group-hover:text-blue-600"}`}>
+        <div className={`flex-shrink-0 transition-colors ${active ? "text-white" : "group-hover:text-teal-600"}`}>
           {icon}
         </div>
         {!collapsed && (
@@ -78,16 +78,16 @@ function SidebarContent() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-3 text-blue-600"
+            className="flex items-center gap-3 text-teal-600"
           >
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+            <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-black tracking-tight text-gray-900">PhishGuard</span>
           </motion.div>
         )}
         {collapsed && (
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 mx-auto">
+          <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 mx-auto">
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
         )}
