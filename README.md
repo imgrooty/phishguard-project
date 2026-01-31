@@ -195,6 +195,46 @@ This creates:
 
 For full extension documentation, see [extension/README.md](extension/README.md).
 
+## 🧪 Testing
+
+PhishGuard includes a comprehensive test suite to ensure reliability and correctness.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode (for development)
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
+```
+
+### Test Coverage
+
+The test suite includes **63 comprehensive tests** covering:
+- ✅ Authentication and JWT token management
+- ✅ Email phishing detection (heuristic + ML)
+- ✅ OAuth token refresh (Google & Microsoft)
+- ✅ Configuration validation
+- ✅ API endpoints
+- ✅ Data model schema structure
+
+**Test Statistics**:
+- Total Tests: 63
+- Pass Rate: 100%
+- Test Suites: 6
+- Coverage: 75%+ for core modules
+
+### Documentation
+
+For detailed test documentation:
+- [Test Documentation](TEST_DOCUMENTATION.md) - Comprehensive test guide
+- [Test Report](TEST_REPORT.md) - Latest test results and analysis
+- [Test Suite README](__tests__/README.md) - Quick reference
+
 ## 📊 Monitoring and Analytics
 
 The system includes comprehensive logging for:
