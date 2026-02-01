@@ -26,14 +26,14 @@ const team = [
   {
     name: "Bishi",
     role: "Backend Developer",
-    image: "https://avatars.githubusercontent.com/u/225837697?v=4",
+    image: "Bishi.jpeg",
     bio: "Specialized in robust backend systems and APIs.",
     social: { github: "#", linkedin: "#", twitter: "#" }
   },
   {
     name: "Brikhesh",
     role: "Frontend Stack Developer",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+    image: "Gajendra.jpeg",
     bio: "Creating beautiful and intuitive user interfaces.",
     social: { github: "#", linkedin: "#", twitter: "#" }
   },
