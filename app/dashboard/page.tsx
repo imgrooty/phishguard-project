@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useSession } from "next-auth/react";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEmails } from "@/components/EmailContext";
 import {
@@ -76,6 +76,28 @@ function DashboardContent() {
   const [sortBy, setSortBy] = useState<'date' | 'risk'>('date');
   const [showEmailList, setShowEmailList] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Focus search on '/'
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      // Blur and clear on 'Escape'
+      if (e.key === 'Escape') {
+        if (document.activeElement === searchInputRef.current) {
+          searchInputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Helper functions
   const sanitizeHTML = (html: string): string => {
@@ -302,7 +324,7 @@ function DashboardContent() {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => fetchEmails(false)}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
                   >
                     <RefreshCw className={`w-4 h-4 text-teal-600 group-hover:rotate-180 transition-transform duration-500 ${loading ? 'animate-spin' : ''}`} />
                     <span className="text-sm font-semibold">{loading ? "Syncing..." : "Sync"}</span>
@@ -328,7 +350,7 @@ function DashboardContent() {
                       }
                     }}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
                   >
                     <Brain className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-semibold">Re-analyze</span>
@@ -465,13 +487,23 @@ function DashboardContent() {
                     <div className="relative group">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
                       <input
+                        ref={searchInputRef}
                         type="text"
                         aria-label="Search emails"
                         placeholder="Search by sender or subject..."
                         value={searchQuery}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setIsSearchFocused(false)}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-10 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:bg-white focus:border-teal-500/50 transition-all"
                       />
+                      {!isSearchFocused && !searchQuery && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:block">
+                          <kbd className="px-1.5 py-0.5 text-[10px] font-bold text-gray-400 bg-white border border-gray-200 rounded-md shadow-sm uppercase tracking-tighter">
+                            /
+                          </kbd>
+                        </div>
+                      )}
                       {searchQuery && (
                         <button
                           onClick={() => setSearchQuery("")}
@@ -490,7 +522,7 @@ function DashboardContent() {
                           value={sortBy}
                           aria-label="Sort emails"
                           onChange={(e) => setSortBy(e.target.value as any)}
-                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
+                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 hover:bg-gray-100 transition-colors"
                         >
                           <option value="date">Newest</option>
                           <option value="risk">High Risk</option>
@@ -502,7 +534,7 @@ function DashboardContent() {
                           value={filter}
                           aria-label="Filter emails"
                           onChange={(e) => setFilter(e.target.value as any)}
-                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
+                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 hover:bg-gray-100 transition-colors"
                         >
                           <option value="all">All</option>
                           <option value="safe">Safe</option>
