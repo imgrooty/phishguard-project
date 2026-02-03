@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useSession } from "next-auth/react";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEmails } from "@/components/EmailContext";
 import {
@@ -76,6 +76,8 @@ function DashboardContent() {
   const [sortBy, setSortBy] = useState<'date' | 'risk'>('date');
   const [showEmailList, setShowEmailList] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Helper functions
   const sanitizeHTML = (html: string): string => {
@@ -274,6 +276,29 @@ function DashboardContent() {
     }
   }, [status, router]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Focus search input with '/'
+      if (e.key === "/" &&
+          document.activeElement?.tagName !== "INPUT" &&
+          document.activeElement?.tagName !== "TEXTAREA" &&
+          document.activeElement?.tagName !== "SELECT") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      // Blur/Clear search input with 'Escape'
+      if (e.key === "Escape" && document.activeElement === searchInputRef.current) {
+        searchInputRef.current?.blur();
+        setSearchQuery("");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   if (status === "loading") return <p className="text-center mt-10">Checking authentication...</p>;
 
 
@@ -465,13 +490,23 @@ function DashboardContent() {
                     <div className="relative group">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
                       <input
+                        ref={searchInputRef}
                         type="text"
                         aria-label="Search emails"
                         placeholder="Search by sender or subject..."
                         value={searchQuery}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setIsSearchFocused(false)}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-10 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:bg-white focus:border-teal-500/50 transition-all"
                       />
+                      {!isSearchFocused && !searchQuery && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:block">
+                          <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border border-gray-200 bg-white px-1.5 font-sans text-[10px] font-medium text-gray-400 opacity-100">
+                            <span className="text-xs">/</span>
+                          </kbd>
+                        </div>
+                      )}
                       {searchQuery && (
                         <button
                           onClick={() => setSearchQuery("")}
@@ -490,7 +525,7 @@ function DashboardContent() {
                           value={sortBy}
                           aria-label="Sort emails"
                           onChange={(e) => setSortBy(e.target.value as any)}
-                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
+                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 hover:bg-gray-100 transition-colors"
                         >
                           <option value="date">Newest</option>
                           <option value="risk">High Risk</option>
@@ -502,7 +537,7 @@ function DashboardContent() {
                           value={filter}
                           aria-label="Filter emails"
                           onChange={(e) => setFilter(e.target.value as any)}
-                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none hover:bg-gray-100 transition-colors"
+                          className="w-full pl-8 pr-2 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 hover:bg-gray-100 transition-colors"
                         >
                           <option value="all">All</option>
                           <option value="safe">Safe</option>

@@ -5,3 +5,7 @@
 ## 2025-05-15 - Sidebar Accessibility in Collapsible Interfaces
 **Learning:** Collapsible sidebars that hide labels for an icon-only "mini" mode create a complete navigation blackout for screen reader users if labels are not preserved via `sr-only` elements. Native tooltips using the `title` attribute provide a simple but effective visual hint for icon-only buttons without requiring complex tooltip components.
 **Action:** When implementing collapsible sidebars, always use `sr-only` for labels in collapsed mode and `aria-current="page"` for the active link.
+
+## 2025-05-16 - Dashboard Search Power-UX
+**Learning:** Adding a global keyboard shortcut (like '/') to focus the search bar, combined with a visual hint, significantly improves discoverability for power users without cluttering the UI for casual users. Providing an 'Escape' key handler to clear and blur the search adds a layer of "invisible" polish.
+**Action:** When implementing search-heavy dashboards, prioritize shortcut accessibility and visual hints for search focus.
