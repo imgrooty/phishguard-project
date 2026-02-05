@@ -82,9 +82,13 @@ function DashboardContent() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Focus search on '/'
-      if (e.key === "/" &&
-          document.activeElement?.tagName !== "INPUT" &&
-          document.activeElement?.tagName !== "TEXTAREA") {
+      if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA" &&
+        document.activeElement?.tagName !== "SELECT" &&
+        document.activeElement?.getAttribute("contenteditable") !== "true"
+      ) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
@@ -323,7 +327,7 @@ function DashboardContent() {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => fetchEmails(false)}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:outline-none"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:outline-none"
                   >
                     <RefreshCw className={`w-4 h-4 text-teal-600 group-hover:rotate-180 transition-transform duration-500 ${loading ? 'animate-spin' : ''}`} />
                     <span className="text-sm font-semibold">{loading ? "Syncing..." : "Sync"}</span>
@@ -349,7 +353,7 @@ function DashboardContent() {
                       }
                     }}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:outline-none"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all shadow-sm group focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:outline-none"
                   >
                     <Brain className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-semibold">Re-analyze</span>
@@ -507,7 +511,7 @@ function DashboardContent() {
                         <button
                           onClick={() => setSearchQuery("")}
                           aria-label="Clear search"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:outline-none rounded-full"
                         >
                           <XCircle className="w-4 h-4" />
                         </button>
