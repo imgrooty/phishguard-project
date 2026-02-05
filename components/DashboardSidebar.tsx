@@ -124,7 +124,7 @@ function SidebarContent() {
       <div className="p-6">
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all w-full group"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all w-full group focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:outline-none"
           aria-label="Sign Out"
           title={collapsed ? "Sign Out" : undefined}
         >
